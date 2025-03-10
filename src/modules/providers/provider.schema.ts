@@ -10,7 +10,15 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "../users/user.schema";
 import { locations } from "../locations/location.schema";
-import { InferInsertModel, InferSelectModel, sql } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  relations,
+  sql,
+} from "drizzle-orm";
+import { services } from "../services/services.schema";
+import { bookings } from "../bookings/booking.schema";
+import { reviews } from "../reviews/review.schema";
 
 export const providers = pgTable("providers", {
   id: serial("id").primaryKey(),
@@ -28,6 +36,16 @@ export const providers = pgTable("providers", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
   deletedAt: timestamp("deleted_at"),
 });
+
+export const providerRelations = relations(providers, ({ many, one }) => ({
+  services: many(services),
+  bookings: many(bookings),
+  reviews: many(reviews),
+  user: one(users, {
+    fields: [providers.userId],
+    references: [users.id],
+  }),
+}));
 
 export type Provider = InferSelectModel<typeof providers>;
 export type NewProvider = InferInsertModel<typeof providers>;
