@@ -3,10 +3,12 @@ import { config } from "dotenv";
 config({ path: "./.env.development.local" });
 
 export const {
+  NODE_ENV,
   PORT,
   DATABASE_URL,
   JWT_SECRET,
   JWT_EXPIRATION_TIME,
+
   //   CLIENT_ORIGIN,
   //   REDIS_HOST,
   //   REDIS_PORT,
