@@ -1,5 +1,6 @@
-import { InferSelectModel, sql } from "drizzle-orm";
+import { InferSelectModel, relations, sql } from "drizzle-orm";
 import { pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
+import { services } from "../services/services.schema";
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -17,6 +18,11 @@ export const subcategories = pgTable("subcategories", {
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
+
+export const categoryRelations = relations(categories, ({ many }) => ({
+  subcategories: many(subcategories),
+  services: many(services),
+}));
 
 export type Category = InferSelectModel<typeof categories>;
 export type Subcategory = InferSelectModel<typeof subcategories>;
