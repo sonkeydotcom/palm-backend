@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { providers } from "../providers/provider.schema";
 import { categories } from "../categories/category.schema";
-import { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -29,6 +29,17 @@ export const services = pgTable("services", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const serviceRelations = relations(services, ({ many, one }) => ({
+  proivder: one(providers, {
+    fields: [services.providerId],
+    references: [providers.id],
+  }),
+  category: one(categories, {
+    fields: [services.categoryId],
+    references: [categories.id],
+  }),
+}));
 
 export type Service = InferSelectModel<typeof services>;
 export type NewService = InferInsertModel<typeof services>;
