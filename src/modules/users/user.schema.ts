@@ -1,4 +1,9 @@
-import { InferInsertModel, InferSelectModel, sql } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  relations,
+  sql,
+} from "drizzle-orm";
 import {
   boolean,
   pgTable,
@@ -6,6 +11,9 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
+import { bookings } from "../bookings/booking.schema";
+import { reviews } from "../reviews/review.schema";
+import { providers } from "../providers/provider.schema";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -22,6 +30,12 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
+
+export const userRelations = relations(users, ({ many }) => ({
+  bookings: many(bookings),
+  reviews: many(reviews),
+  providers: many(providers),
+}));
 
 //   deletedAt: timestamp("deleted_at"),
 //   rememberToken: varchar("remember_token", { length: 100 }),
