@@ -12,6 +12,8 @@ import {
 import { providers } from "../providers/provider.schema";
 import { categories } from "../categories/category.schema";
 import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
+import { bookings } from "../bookings/booking.schema";
+import { reviews } from "../reviews/review.schema";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -39,6 +41,8 @@ export const serviceRelations = relations(services, ({ many, one }) => ({
     fields: [services.categoryId],
     references: [categories.id],
   }),
+  bookings: many(bookings),
+  reviews: many(reviews),
 }));
 
 export type Service = InferSelectModel<typeof services>;
