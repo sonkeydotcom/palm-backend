@@ -10,14 +10,14 @@ import {
 import { providers } from "../providers/provider.schema";
 import { users } from "../users/user.schema";
 import { services } from "../services/services.schema";
-import { InferSelectModel, sql } from "drizzle-orm";
+import { InferSelectModel, relations, sql } from "drizzle-orm";
 
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .references(() => users.id)
     .notNull(),
-  proivderId: integer("provider_id")
+  providerId: integer("provider_id")
     .references(() => providers.id)
     .notNull(),
   serviceId: integer("service_id")
@@ -44,6 +44,21 @@ export const bookings = pgTable("bookings", {
   //     () => bookings.id
   //   ),
 });
+
+export const bookingsRelations = relations(bookings, ({ one }) => ({
+  user: one(users, {
+    fields: [bookings.userId],
+    references: [users.id],
+  }),
+  service: one(services, {
+    fields: [bookings.serviceId],
+    references: [services.id],
+  }),
+  provider: one(providers, {
+    fields: [bookings.providerId],
+    references: [providers.id],
+  }),
+}));
 
 export type Booking = InferSelectModel<typeof bookings>;
 export type NewBooking = InferSelectModel<typeof bookings>;

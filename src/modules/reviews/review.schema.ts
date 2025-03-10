@@ -1,4 +1,9 @@
-import { InferInsertModel, InferSelectModel, sql } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  relations,
+  sql,
+} from "drizzle-orm";
 import {
   integer,
   numeric,
@@ -29,6 +34,21 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+  }),
+  service: one(services, {
+    fields: [reviews.serviceId],
+    references: [services.id],
+  }),
+  provider: one(providers, {
+    fields: [reviews.providerId],
+    references: [providers.id],
+  }),
+}));
 
 export type Review = InferSelectModel<typeof reviews>;
 export type NewReview = InferInsertModel<typeof reviews>;
