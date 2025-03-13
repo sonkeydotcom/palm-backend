@@ -7,21 +7,23 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
-import { providers } from "../providers/provider.schema";
+
 import { users } from "../users/user.schema";
-import { services } from "../services/services.schema";
+
 import { InferSelectModel, relations, sql } from "drizzle-orm";
+import { taskers } from "../tasker/tasker.schema";
+import { tasks } from "../tasks/task.schema";
 
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .references(() => users.id)
     .notNull(),
-  providerId: integer("provider_id")
-    .references(() => providers.id)
+  taskerId: integer("tasker_id")
+    .references(() => taskers.id)
     .notNull(),
-  serviceId: integer("service_id")
-    .references(() => services.id)
+  taskId: integer("task_id")
+    .references(() => tasks.id)
     .notNull(),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
@@ -50,13 +52,13 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
     fields: [bookings.userId],
     references: [users.id],
   }),
-  service: one(services, {
-    fields: [bookings.serviceId],
-    references: [services.id],
+  task: one(tasks, {
+    fields: [bookings.taskId],
+    references: [tasks.id],
   }),
-  provider: one(providers, {
-    fields: [bookings.providerId],
-    references: [providers.id],
+  tasker: one(taskers, {
+    fields: [bookings.taskerId],
+    references: [taskers.id],
   }),
 }));
 
