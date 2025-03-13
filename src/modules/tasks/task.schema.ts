@@ -12,6 +12,7 @@ import {
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { taskers } from "../tasker/tasker.schema";
 import { categories } from "../categories/category.schema";
+import { locations } from "../locations/location.schema";
 
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
@@ -22,6 +23,7 @@ export const tasks = pgTable("tasks", {
     .references(() => taskers.id)
     .notNull(),
   categoryId: integer("category_id").references(() => categories.id),
+  locationId: integer("location_id").references(() => locations.id),
   baseHourlyRate: integer("base_hourly_rate"), // in cents
   estimatedDuration: integer("estimated_duration"), // in minutes
   image: text("image"),

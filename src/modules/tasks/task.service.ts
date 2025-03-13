@@ -24,6 +24,7 @@ import db from "../../config/database";
 import { categories } from "../categories/category.schema";
 import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
+import { locations } from "../locations/location.schema";
 
 export interface TaskSearchParams {
   query?: string;
@@ -128,6 +129,8 @@ export class TaskService {
       conditions.push(eq(tasks.isPopular, options.isPopular));
     }
 
+    // Location based sorting
+
     // Determine sort column and direction
     let sortColumn;
     const sortDirection = order === "asc" ? asc : desc;
@@ -151,6 +154,7 @@ export class TaskService {
       .select()
       .from(tasks)
       .leftJoin(categories, eq(tasks.categoryId, categories.id))
+      .leftJoin(locations, eq(tasks.locationId, locations.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(sortDirection(sortColumn))
       .limit(limit)
