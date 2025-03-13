@@ -16,6 +16,7 @@ export const validateRegister = (data: User) => {
     password: Joi.string().min(8).required(),
     firstName: Joi.string().min(2).max(50),
     lastName: Joi.string().min(2).max(50),
+    username: Joi.string().min(3).max(50).required(),
     // phone: Joi.string().pattern(/^[0-9+\-\s()]{8,20}$/),
     role: Joi.string().valid("customer", "provider").default("customer"),
   });
