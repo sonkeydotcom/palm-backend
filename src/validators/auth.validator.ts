@@ -1,6 +1,7 @@
 import Joi from "joi";
+import { User } from "../modules/users/user.schema";
 
-export const validateLogin = (data: any) => {
+export const validateLogin = (data: User) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().required(),
@@ -9,7 +10,7 @@ export const validateLogin = (data: any) => {
   return schema.validate(data);
 };
 
-export const validateRegister = (data: any) => {
+export const validateRegister = (data: User) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().min(8).required(),
