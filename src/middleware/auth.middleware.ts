@@ -13,7 +13,7 @@ export const authenticate = (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization ?? "";
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       throw new AppError("Missing or invalid authorization token", 401);
@@ -24,7 +24,7 @@ export const authenticate = (
       throw new AppError("Missing authorization token", 401);
     }
 
-    const decoded = authService.verifyToken(token) as any;
+    const decoded = authService.verifyToken(token) as User;
 
     req.user = {
       id: decoded.id,
@@ -45,7 +45,7 @@ export const authprize = (roles: string[]) => {
       return next(new AppError("Authentication required", 401));
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role as string)) {
       return next(new AppError("Not authorized to access this resource", 403));
     }
 
