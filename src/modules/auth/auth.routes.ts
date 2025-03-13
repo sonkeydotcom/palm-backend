@@ -5,8 +5,8 @@ const router = Router();
 
 // Auth routes here
 
-router.post("/users", authController.login);
+router.post("/sign-in", authController.login);
 
-router.post("/register", authController.register);
+router.post("/sign-up", authController.register);
 
 export default router;
