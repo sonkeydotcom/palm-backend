@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import db from "../../config/database";
-import { Service, services } from "../services/services.schema";
+import { NewService, Service, services } from "../services/services.schema";
 
 export class TaskService {
   // Get all tasks from the database
@@ -25,7 +25,7 @@ export class TaskService {
 
   // Create a new task in the database
 
-  async createTask(taskData: Omit<Service, "id">): Promise<Service> {
+  async createTask(taskData: NewService): Promise<Service> {
     const result = await db.insert(services).values(taskData).returning();
     return result[0];
   }
