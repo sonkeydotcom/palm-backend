@@ -21,7 +21,7 @@ export const categories = pgTable("categories", {
   icon: text("icon"),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   // parentId: serial("parent_id").references(() => categories.id),
-  displayOrder: serial("display_order").default(0),
+  displayOrder: serial("display_order"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
