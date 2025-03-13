@@ -29,6 +29,7 @@ export class UserService {
     if (existingUser) {
       throw new AppError("Email already exists", 400);
     }
+    // const salt = await bcrypt.genSalt(10)
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db
       .insert(users)
