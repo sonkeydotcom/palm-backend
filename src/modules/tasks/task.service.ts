@@ -34,7 +34,15 @@ export interface TaskSearchParams {
   tags?: string[];
   isFeatured?: boolean;
   isPopular?: boolean;
-  sort?: "name" | "rate" | "rating" | "createdAt";
+  locationId?: number;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  radius?: number;
+  latitude?: number;
+  longitude?: number;
+  sort?: "name" | "rate" | "rating" | "createdAt" | "distance";
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
@@ -49,6 +57,16 @@ export interface TaskWithRelations extends Task {
   };
   questions?: TaskQuestion[];
   faqs?: TaskFaq[];
+  location?: {
+    id: number;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export class TaskService {
