@@ -8,6 +8,13 @@
       "when": 1741858844954,
       "tag": "0000_blue_human_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1741860070275,
+      "tag": "0001_smart_power_man",
+      "breakpoints": true
     }
   ]
 }
