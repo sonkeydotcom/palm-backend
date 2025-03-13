@@ -22,6 +22,13 @@ export class TaskService {
       .where(eq(services.providerId, providerId));
     return result;
   }
+
+  // Create a new task in the database
+
+  async createTask(taskData: Omit<Service, "id">): Promise<Service> {
+    const result = await db.insert(services).values(taskData).returning();
+    return result[0];
+  }
 }
 
 export const taskService = new TaskService();
