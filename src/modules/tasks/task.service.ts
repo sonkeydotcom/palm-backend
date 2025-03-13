@@ -52,6 +52,8 @@ export interface TaskWithRelations extends Task {
 }
 
 export class TaskService {
+  // Fix the findAll method
+  // Fix the findAll method
   async findAll(options: TaskSearchParams = {}): Promise<TaskWithRelations[]> {
     const {
       includeInactive = false,
@@ -61,19 +63,7 @@ export class TaskService {
       limit = 20,
     } = options;
 
-    let query = db
-      .select({
-        id: tasks.id,
-        name: tasks.name,
-        description: tasks.description,
-        categoryId: tasks.categoryId,
-        categoryName: categories.name,
-        categorySlug: categories.slug,
-      })
-      .from(tasks)
-      .leftJoin(categories, eq(tasks.categoryId, categories.id));
-
-    // Apply filters
+    // Build all conditions in a single array
     const conditions = [];
 
     if (!includeInactive) {
@@ -95,7 +85,7 @@ export class TaskService {
     }
 
     if (options.categorySlug) {
-      query = query.where(eq(categories.slug, options.categorySlug));
+      conditions.push(eq(categories.slug, options.categorySlug));
     }
 
     if (options.minRate !== undefined && options.maxRate !== undefined) {
@@ -109,8 +99,6 @@ export class TaskService {
     }
 
     if (options.tags && options.tags.length > 0) {
-      // This assumes tags is stored as a JSON array
-      // The exact implementation depends on your database
       conditions.push(sql`${tasks.tags} ?& array[${options.tags.join(",")}]`);
     }
 
@@ -122,55 +110,52 @@ export class TaskService {
       conditions.push(eq(tasks.isPopular, options.isPopular));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+    // Determine sort column and direction
+    let sortColumn;
+    const sortDirection = order === "asc" ? asc : desc;
+
+    switch (sort) {
+      case "name":
+        sortColumn = tasks.name;
+        break;
+      case "rate":
+        sortColumn = tasks.baseHourlyRate;
+        break;
+      case "rating":
+        sortColumn = tasks.averageRating;
+        break;
+      default:
+        sortColumn = tasks.createdAt;
     }
 
-    // Apply sorting
-    if (sort === "name") {
-      query =
-        order === "asc"
-          ? query.orderBy(asc(tasks.name))
-          : query.orderBy(desc(tasks.name));
-    } else if (sort === "rate") {
-      query =
-        order === "asc"
-          ? query.orderBy(asc(tasks.baseHourlyRate))
-          : query.orderBy(desc(tasks.baseHourlyRate));
-    } else if (sort === "rating") {
-      query =
-        order === "asc"
-          ? query.orderBy(asc(tasks.averageRating))
-          : query.orderBy(desc(tasks.averageRating));
-    } else {
-      // Default sort by created date
-      query =
-        order === "asc"
-          ? query.orderBy(asc(tasks.createdAt))
-          : query.orderBy(desc(tasks.createdAt));
-    }
-
-    // Apply pagination
-    const offset = (page - 1) * limit;
-    query = query.limit(limit).offset(offset);
-
-    const results = await query;
+    // Execute query with all conditions combined
+    const results = await db
+      .select()
+      .from(tasks)
+      .leftJoin(categories, eq(tasks.categoryId, categories.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(sortDirection(sortColumn))
+      .limit(limit)
+      .offset((page - 1) * limit);
 
     // Transform results to include category info
-    const tasksWithRelations: TaskWithRelations[] = results.map((result) => {
-      const { categoryName, categorySlug, ...taskData } = result;
+    const tasksWithRelations: TaskWithRelations[] = [];
 
-      return {
-        ...taskData,
-        category: categoryName
-          ? {
-              id: taskData.categoryId!,
-              name: categoryName,
-              slug: categorySlug!,
-            }
-          : undefined,
-      };
-    });
+    for (const row of results) {
+      const task = row.tasks;
+      const category = row.categories
+        ? {
+            id: row.categories.id,
+            name: row.categories.name,
+            slug: row.categories.slug,
+          }
+        : undefined;
+
+      tasksWithRelations.push({
+        ...task,
+        category,
+      });
+    }
 
     // Fetch questions and FAQs for each task
     const taskIds = tasksWithRelations.map((task) => task.id);
@@ -218,13 +203,10 @@ export class TaskService {
     return tasksWithRelations;
   }
 
+  // Fix the findById method
   async findById(id: number): Promise<TaskWithRelations | undefined> {
     const result = await db
-      .select({
-        ...tasks,
-        categoryName: categories.name,
-        categorySlug: categories.slug,
-      })
+      .select()
       .from(tasks)
       .leftJoin(categories, eq(tasks.categoryId, categories.id))
       .where(eq(tasks.id, id))
@@ -234,17 +216,19 @@ export class TaskService {
       return undefined;
     }
 
-    const { categoryName, categorySlug, ...taskData } = result[0];
+    const row = result[0];
+    const task = row.tasks;
+    const category = row.categories
+      ? {
+          id: row.categories.id,
+          name: row.categories.name,
+          slug: row.categories.slug,
+        }
+      : undefined;
 
     const taskWithRelations: TaskWithRelations = {
-      ...taskData,
-      category: categoryName
-        ? {
-            id: taskData.categoryId!,
-            name: categoryName,
-            slug: categorySlug!,
-          }
-        : undefined,
+      ...task,
+      category,
     };
 
     // Fetch questions
@@ -267,13 +251,10 @@ export class TaskService {
     return taskWithRelations;
   }
 
+  // Fix the findBySlug method
   async findBySlug(slug: string): Promise<TaskWithRelations | undefined> {
     const result = await db
-      .select({
-        ...tasks,
-        categoryName: categories.name,
-        categorySlug: categories.slug,
-      })
+      .select()
       .from(tasks)
       .leftJoin(categories, eq(tasks.categoryId, categories.id))
       .where(eq(tasks.slug, slug))
@@ -283,31 +264,33 @@ export class TaskService {
       return undefined;
     }
 
-    const { categoryName, categorySlug, ...taskData } = result[0];
+    const row = result[0];
+    const task = row.tasks;
+    const category = row.categories
+      ? {
+          id: row.categories.id,
+          name: row.categories.name,
+          slug: row.categories.slug,
+        }
+      : undefined;
 
     const taskWithRelations: TaskWithRelations = {
-      ...taskData,
-      category: categoryName
-        ? {
-            id: taskData.categoryId!,
-            name: categoryName,
-            slug: categorySlug!,
-          }
-        : undefined,
+      ...task,
+      category,
     };
 
     // Fetch questions
     const questions = await db
       .select()
       .from(taskQuestions)
-      .where(eq(taskQuestions.taskId, taskData.id))
+      .where(eq(taskQuestions.taskId, task.id))
       .orderBy(asc(taskQuestions.displayOrder));
 
     // Fetch FAQs
     const faqs = await db
       .select()
       .from(taskFaqs)
-      .where(eq(taskFaqs.taskId, taskData.id))
+      .where(eq(taskFaqs.taskId, task.id))
       .orderBy(asc(taskFaqs.displayOrder));
 
     taskWithRelations.questions = questions;
@@ -401,7 +384,7 @@ export class TaskService {
             id: number;
             question?: string;
             type?: string;
-            options?: any;
+            options?: string;
             isRequired?: boolean;
             displayOrder?: number;
           }
@@ -476,7 +459,7 @@ export class TaskService {
         const existingQuestionIds: number[] = [];
 
         questions.forEach((question, index) => {
-          if ("id" in question) {
+          if ("id" in question && question.id !== undefined) {
             // Update existing question
             existingQuestionIds.push(question.id);
             questionsToUpdate.push({
@@ -497,8 +480,8 @@ export class TaskService {
             // Create new question
             questionsToCreate.push({
               taskId: id,
-              question: question.question,
-              type: question.type,
+              question: question.question as string,
+              type: question.type as string,
               options: question.options,
               isRequired: question.isRequired || false,
               displayOrder: question.displayOrder || index,
@@ -553,7 +536,7 @@ export class TaskService {
         const existingFaqIds: number[] = [];
 
         faqs.forEach((faq, index) => {
-          if ("id" in faq) {
+          if ("id" in faq && faq.id !== undefined) {
             // Update existing FAQ
             existingFaqIds.push(faq.id);
             faqsToUpdate.push({
@@ -570,8 +553,8 @@ export class TaskService {
             // Create new FAQ
             faqsToCreate.push({
               taskId: id,
-              question: faq.question,
-              answer: faq.answer,
+              question: faq.question as string,
+              answer: faq.answer as string,
               displayOrder: faq.displayOrder || index,
               createdAt: new Date(),
               updatedAt: new Date(),
