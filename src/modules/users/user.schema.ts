@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { bookings } from "../bookings/booking.schema";
 import { reviews } from "../reviews/review.schema";
-import { providers } from "../providers/provider.schema";
+import { taskers } from "../tasker/tasker.schema";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -34,7 +34,7 @@ export const users = pgTable("users", {
 export const userRelations = relations(users, ({ many }) => ({
   bookings: many(bookings),
   reviews: many(reviews),
-  providers: many(providers),
+  taskers: many(taskers),
 }));
 
 //   deletedAt: timestamp("deleted_at"),

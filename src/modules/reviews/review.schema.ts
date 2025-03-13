@@ -12,20 +12,22 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { providers } from "../providers/provider.schema";
+
 import { users } from "../users/user.schema";
-import { services } from "../services/services.schema";
+
 import { bookings } from "../bookings/booking.schema";
+import { tasks } from "../tasks/task.schema";
+import { taskers } from "../tasker/tasker.schema";
 
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .references(() => users.id)
     .notNull(),
-  serviceId: integer("service_id").references(() => services.id),
+  taskId: integer("service_id").references(() => tasks.id),
   bookingId: integer("booking_id").references(() => bookings.id),
-  providerId: integer("provider_id")
-    .references(() => providers.id)
+  taskerId: integer("provider_id")
+    .references(() => taskers.id)
     .notNull(),
   rating: numeric("rating", { precision: 3, scale: 1 }).notNull(), // Rating out of 5
   comment: text("comment"),
@@ -40,13 +42,13 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
     fields: [reviews.userId],
     references: [users.id],
   }),
-  service: one(services, {
-    fields: [reviews.serviceId],
-    references: [services.id],
+  service: one(tasks, {
+    fields: [reviews.taskId],
+    references: [tasks.id],
   }),
-  provider: one(providers, {
-    fields: [reviews.providerId],
-    references: [providers.id],
+  provider: one(taskers, {
+    fields: [reviews.taskerId],
+    references: [taskers.id],
   }),
 }));
 
