@@ -52,7 +52,7 @@ export const errorHandler = (
     success: false,
     message: responseMessage,
     error: process.env.NODE_ENV !== "production" ? errorMessage : undefined,
-    stack: process.env.NODE_ENV !== "production" ? errorStack : undefined,
+    // stack: process.env.NODE_ENV !== "production" ? errorStack : undefined,
     method: req.method,
     timestamp: new Date().toISOString(),
   });
