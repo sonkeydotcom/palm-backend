@@ -28,6 +28,8 @@ export const services = pgTable("services", {
   images: jsonb("images"), // Array of image URLs
   availability: jsonb("availability"), // JSON object with availability slots
   isActive: boolean("is_active").default(true),
+  isPopular: boolean("is_popular").default(false),
+  isFeatured: boolean("is_featured").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
