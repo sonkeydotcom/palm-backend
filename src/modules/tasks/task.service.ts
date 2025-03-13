@@ -160,6 +160,33 @@ export class TaskService {
       .limit(limit)
       .offset((page - 1) * limit);
 
+    if (options.locationId) {
+      conditions.push(eq(tasks.locationId, options.locationId));
+    }
+
+    if (options.city) {
+      conditions.push(like(locations.city, `%${options.city}%`));
+    }
+
+    if (options.state) {
+      conditions.push(like(locations.state, `%${options.state}%`));
+    }
+
+    // Add distance-based sortiting  if coordinates and radius are provided
+
+    if (
+      options.latitude !== undefined &&
+      options.longitude !== undefined &&
+      options.radius !== undefined
+    ) {
+      // calculate distance using Haversine formula
+      // Provided 6371 is Earths radius in kilometres
+
+      conditions.push(
+        sql`(6371 * acos(cos(radians(${options.latitude})) * cos(radians(${locations.latitude})) * cos(radians(${locations.longitude})- radians(${options.latitude})) + sin(radians(${options.latitude})) * sin(radians(${locations.latitude})))) <= ${options.radius}`
+      );
+    }
+
     // Transform results to include category info
     const tasksWithRelations: TaskWithRelations[] = [];
 
