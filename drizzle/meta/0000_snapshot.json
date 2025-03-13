@@ -1,5 +1,5 @@
 {
-  "id": "d7929d82-694e-4390-a35a-d6828cdb12f5",
+  "id": "9746acc0-5a67-4e36-93a2-1f3f8eee4e73",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -196,8 +196,7 @@
           "name": "display_order",
           "type": "serial",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": true
         },
         "is_active": {
           "name": "is_active",

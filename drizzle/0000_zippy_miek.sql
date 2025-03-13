@@ -23,7 +23,7 @@ CREATE TABLE "categories" (
 	"description" text,
 	"icon" text,
 	"slug" varchar(100) NOT NULL,
-	"display_order" serial DEFAULT 0 NOT NULL,
+	"display_order" serial NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
