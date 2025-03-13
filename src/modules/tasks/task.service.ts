@@ -9,10 +9,18 @@ export class TaskService {
   }
 
   // Get a task by its ID
-
   async getTaskById(id: number): Promise<Service | null> {
     const result = await db.select().from(services).where(eq(services.id, id));
     return result[0];
+  }
+
+  // Get a tasks by provider ID
+  async getTasksByProviderId(providerId: number): Promise<Service[]> {
+    const result = await db
+      .select()
+      .from(services)
+      .where(eq(services.providerId, providerId));
+    return result;
   }
 }
 
