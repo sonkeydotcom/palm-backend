@@ -25,6 +25,7 @@ import { categories } from "../categories/category.schema";
 import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
 import { locations } from "../locations/location.schema";
+import { calcualteDistance } from "../../utils/distance";
 
 export interface TaskSearchParams {
   query?: string;
@@ -129,7 +130,45 @@ export class TaskService {
       conditions.push(eq(tasks.isPopular, options.isPopular));
     }
 
+    // Add location filters BEFORE executing the query
+    if (options.locationId) {
+      conditions.push(eq(tasks.locationId, options.locationId));
+    }
+
+    if (options.city) {
+      conditions.push(like(locations.city, `%${options.city}%`));
+    }
+
+    if (options.state) {
+      conditions.push(like(locations.state, `%${options.state}%`));
+    }
+
     // Location based sorting
+
+    let distanceExpression;
+    if (
+      options.latitude !== undefined &&
+      options.longitude !== undefined &&
+      options.radius !== undefined
+    ) {
+      // calculate distance using Haversine formula
+      // Provided 6371 is Earths radius in kilometres
+
+      // Create SQL expression for the Haversine formula
+      // This is equivalent to our utility function but in SQL form
+      distanceExpression = sql`(
+      6371 * acos(
+        cos(radians(${options.latitude})) * 
+        cos(radians(${locations.latitude})) * 
+        cos(radians(${locations.longitude}) - radians(${options.longitude})) + 
+        sin(radians(${options.latitude})) * 
+        sin(radians(${locations.latitude}))
+      )
+    )`;
+
+      // Add condition to filter by radius
+      conditions.push(sql`${distanceExpression} <= ${options.radius}`);
+    }
 
     // Determine sort column and direction
     let sortColumn;
@@ -145,47 +184,39 @@ export class TaskService {
       case "rating":
         sortColumn = tasks.averageRating;
         break;
+      case "distance":
+        //
+        break;
       default:
         sortColumn = tasks.createdAt;
     }
 
     // Execute query with all conditions combined
-    const results = await db
+    // const results = await db
+    let queryBuilder = db
       .select()
       .from(tasks)
       .leftJoin(categories, eq(tasks.categoryId, categories.id))
       .leftJoin(locations, eq(tasks.locationId, locations.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(sortDirection(sortColumn))
-      .limit(limit)
-      .offset((page - 1) * limit);
-
-    if (options.locationId) {
-      conditions.push(eq(tasks.locationId, options.locationId));
-    }
-
-    if (options.city) {
-      conditions.push(like(locations.city, `%${options.city}%`));
-    }
-
-    if (options.state) {
-      conditions.push(like(locations.state, `%${options.state}%`));
-    }
-
-    // Add distance-based sortiting  if coordinates and radius are provided
-
-    if (
-      options.latitude !== undefined &&
-      options.longitude !== undefined &&
-      options.radius !== undefined
-    ) {
-      // calculate distance using Haversine formula
-      // Provided 6371 is Earths radius in kilometres
-
-      conditions.push(
-        sql`(6371 * acos(cos(radians(${options.latitude})) * cos(radians(${locations.latitude})) * cos(radians(${locations.longitude})- radians(${options.latitude})) + sin(radians(${options.latitude})) * sin(radians(${locations.latitude})))) <= ${options.radius}`
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    // Apply sorting based on selected sort type
+    if (sort === "distance" && distanceExpression) {
+      queryBuilder = queryBuilder.orderBy(
+        distanceExpression,
+        order === "asc" ? "asc" : "desc"
+      );
+    } else if (sortColumn) {
+      queryBuilder = queryBuilder.orderBy(
+        sortColumn,
+        order === "asc" ? "asc" : "desc"
       );
     }
+
+    const results = await queryBuilder.limit(limit).offset((page - 1) * limit);
+
+    // .orderBy(sortDirection(sortColumn))
+    // .limit(limit)
+    // .offset((page - 1) * limit);
 
     // Transform results to include category info
     const tasksWithRelations: TaskWithRelations[] = [];
