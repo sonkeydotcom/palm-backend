@@ -1,0 +1,210 @@
+ async findAll(options: TaskSearchParams = {}): Promise<TaskWithRelations[]> {
+    const {
+      includeInactive = false,
+      sort = "createdAt",
+      order = "desc",
+      page = 1,
+      limit = 20,
+    } = options;
+
+    // Build all conditions in a single array
+    const conditions = [];
+
+    if (!includeInactive) {
+      conditions.push(eq(tasks.isActive, true));
+    }
+
+    if (options.query) {
+      conditions.push(
+        or(
+          like(tasks.name, `%${options.query}%`),
+          like(tasks.description, `%${options.query}%`),
+          like(tasks.shortDescription, `%${options.query}%`)
+        )
+      );
+    }
+
+    if (options.categoryId) {
+      conditions.push(eq(tasks.categoryId, options.categoryId));
+    }
+
+    if (options.categorySlug) {
+      conditions.push(eq(categories.slug, options.categorySlug));
+    }
+
+    if (options.minRate !== undefined && options.maxRate !== undefined) {
+      conditions.push(
+        between(tasks.baseHourlyRate, options.minRate, options.maxRate)
+      );
+    } else if (options.minRate !== undefined) {
+      conditions.push(sql`${tasks.baseHourlyRate} >= ${options.minRate}`);
+    } else if (options.maxRate !== undefined) {
+      conditions.push(sql`${tasks.baseHourlyRate} <= ${options.maxRate}`);
+    }
+
+    if (options.tags && options.tags.length > 0) {
+      conditions.push(sql`${tasks.tags} ?& array[${options.tags.join(",")}]`);
+    }
+
+    if (options.isFeatured !== undefined) {
+      conditions.push(eq(tasks.isFeatured, options.isFeatured));
+    }
+
+    if (options.isPopular !== undefined) {
+      conditions.push(eq(tasks.isPopular, options.isPopular));
+    }
+
+    // Add location filters BEFORE executing the query
+    if (options.locationId) {
+      conditions.push(eq(tasks.locationId, options.locationId));
+    }
+
+    if (options.city) {
+      conditions.push(like(locations.city, `%${options.city}%`));
+    }
+
+    if (options.state) {
+      conditions.push(like(locations.state, `%${options.state}%`));
+    }
+
+    // Location based sorting
+
+    let distanceExpression;
+    if (
+      options.latitude !== undefined &&
+      options.longitude !== undefined &&
+      options.radius !== undefined
+    ) {
+      // calculate distance using Haversine formula
+      // Provided 6371 is Earths radius in kilometres
+
+      // Create SQL expression for the Haversine formula
+      // This is equivalent to our utility function but in SQL form
+      distanceExpression = sql`(
+      6371 * acos(
+        cos(radians(${options.latitude})) * 
+        cos(radians(${locations.latitude})) * 
+        cos(radians(${locations.longitude}) - radians(${options.longitude})) + 
+        sin(radians(${options.latitude})) * 
+        sin(radians(${locations.latitude}))
+      )
+    )`;
+
+      // Add condition to filter by radius
+      conditions.push(sql`${distanceExpression} <= ${options.radius}`);
+    }
+
+    // Determine sort column and direction
+    let sortColumn;
+    // const sortDirection = order === "asc" ? asc : desc;
+
+    switch (sort) {
+      case "name":
+        sortColumn = tasks.name;
+        break;
+      case "rate":
+        sortColumn = tasks.baseHourlyRate;
+        break;
+      case "rating":
+        sortColumn = tasks.averageRating;
+        break;
+      case "distance":
+        //
+        break;
+      default:
+        sortColumn = tasks.createdAt;
+    }
+
+    // Execute query with all conditions combined
+    // const results = await db
+    const query = db
+      .select()
+      .from(tasks)
+      .leftJoin(categories, eq(tasks.categoryId, categories.id))
+      .leftJoin(locations, eq(tasks.locationId, locations.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    let queryBuilder = query.$dynamic();
+
+    // Apply sorting based on selected sort type
+    if (sort === "distance" && distanceExpression) {
+      queryBuilder = queryBuilder.orderBy(
+        distanceExpression,
+        order === "asc" ? asc : desc
+      );
+    } else if (sortColumn) {
+      queryBuilder = queryBuilder.orderBy(
+        sortColumn,
+        order === "asc" ? asc : desc
+      );
+    }
+
+    const results = await queryBuilder.limit(limit).offset((page - 1) * limit);
+
+    // .orderBy(sortDirection(sortColumn))
+    // .limit(limit)
+    // .offset((page - 1) * limit);
+
+    // Transform results to include category info
+    const tasksWithRelations: TaskWithRelations[] = [];
+
+    for (const row of results) {
+      const task = row.tasks;
+      const category = row.categories
+        ? {
+            id: row.categories.id,
+            name: row.categories.name,
+            slug: row.categories.slug,
+          }
+        : undefined;
+
+      tasksWithRelations.push({
+        ...task,
+        category,
+      });
+    }
+
+    // Fetch questions and FAQs for each task
+    const taskIds = tasksWithRelations.map((task) => task.id);
+
+    if (taskIds.length > 0) {
+      // Fetch questions
+      const questions = await db
+        .select()
+        .from(taskQuestions)
+        .where(inArray(taskQuestions.taskId, taskIds))
+        .orderBy(asc(taskQuestions.displayOrder));
+
+      // Fetch FAQs
+      const faqs = await db
+        .select()
+        .from(taskFaqs)
+        .where(inArray(taskFaqs.taskId, taskIds))
+        .orderBy(asc(taskFaqs.displayOrder));
+
+      // Group questions and FAQs by task ID
+      const questionsByTaskId: Record<number, TaskQuestion[]> = {};
+      const faqsByTaskId: Record<number, TaskFaq[]> = {};
+
+      questions.forEach((question) => {
+        if (!questionsByTaskId[question.taskId]) {
+          questionsByTaskId[question.taskId] = [];
+        }
+        questionsByTaskId[question.taskId].push(question);
+      });
+
+      faqs.forEach((faq) => {
+        if (!faqsByTaskId[faq.taskId]) {
+          faqsByTaskId[faq.taskId] = [];
+        }
+        faqsByTaskId[faq.taskId].push(faq);
+      });
+
+      // Add questions and FAQs to tasks
+      tasksWithRelations.forEach((task) => {
+        task.questions = questionsByTaskId[task.id] || [];
+        task.faqs = faqsByTaskId[task.id] || [];
+      });
+    }
+
+    return tasksWithRelations;
+  }

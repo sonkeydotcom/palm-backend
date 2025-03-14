@@ -25,7 +25,6 @@ import { categories } from "../categories/category.schema";
 import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
 import { locations } from "../locations/location.schema";
-import { calcualteDistance } from "../../utils/distance";
 
 export interface TaskSearchParams {
   query?: string;
@@ -73,7 +72,6 @@ export interface TaskWithRelations extends Task {
 
 export class TaskService {
   // Fix the findAll method
-  // Fix the findAll method
   async findAll(options: TaskSearchParams = {}): Promise<TaskWithRelations[]> {
     const {
       includeInactive = false,
@@ -81,7 +79,13 @@ export class TaskService {
       order = "desc",
       page = 1,
       limit = 20,
+      latitude,
+      longitude,
+      radius,
     } = options;
+
+    const validPage = page > 0 ? page : 1;
+    const validLimit = limit > 0 ? limit : 20;
 
     // Build all conditions in a single array
     const conditions = [];
@@ -119,7 +123,9 @@ export class TaskService {
     }
 
     if (options.tags && options.tags.length > 0) {
-      conditions.push(sql`${tasks.tags} ?& array[${options.tags.join(",")}]`);
+      // Using a more explicit type casting for the array to improve type safety
+      const tagsArray = options.tags.map((tag) => tag.toString());
+      conditions.push(sql`${tasks.tags} ?& array[${tagsArray.join(",")}]`);
     }
 
     if (options.isFeatured !== undefined) {
@@ -145,34 +151,50 @@ export class TaskService {
 
     // Location based sorting
 
+    // let distanceExpression;
+    // if (
+    //   options.latitude !== undefined &&
+    //   options.longitude !== undefined &&
+    //   options.radius !== undefined
+    // ) {
+    //   // calculate distance using Haversine formula
+    //   // Provided 6371 is Earths radius in kilometres
+
+    //   // Create SQL expression for the Haversine formula
+    //   // This is equivalent to our utility function but in SQL form
+    //   distanceExpression = sql`(
+    //   6371 * acos(
+    //     cos(radians(${options.latitude})) *
+    //     cos(radians(${locations.latitude})) *
+    //     cos(radians(${locations.longitude}) - radians(${options.longitude})) +
+    //     sin(radians(${options.latitude})) *
+    //     sin(radians(${locations.latitude}))
+    //   )
+    // )`;
+
+    //   // Add condition to filter by radius
+    //   conditions.push(sql`${distanceExpression} <= ${options.radius}`);
+    // }
+
     let distanceExpression;
     if (
-      options.latitude !== undefined &&
-      options.longitude !== undefined &&
-      options.radius !== undefined
+      latitude !== undefined &&
+      longitude !== undefined &&
+      radius !== undefined
     ) {
-      // calculate distance using Haversine formula
-      // Provided 6371 is Earths radius in kilometres
-
-      // Create SQL expression for the Haversine formula
-      // This is equivalent to our utility function but in SQL form
-      distanceExpression = sql`(
-      6371 * acos(
-        cos(radians(${options.latitude})) * 
-        cos(radians(${locations.latitude})) * 
-        cos(radians(${locations.longitude}) - radians(${options.longitude})) + 
-        sin(radians(${options.latitude})) * 
-        sin(radians(${locations.latitude}))
-      )
+      // Use PostGIS for distance calculation instead of Haversine formula
+      distanceExpression = sql`ST_Distance(
+      ST_SetSRID(ST_MakePoint(${locations.longitude}, ${locations.latitude}), 4326),
+      ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)
     )`;
 
       // Add condition to filter by radius
-      conditions.push(sql`${distanceExpression} <= ${options.radius}`);
+      conditions.push(sql`${distanceExpression} <= ${radius}`);
     }
 
     // Determine sort column and direction
     let sortColumn;
-    const sortDirection = order === "asc" ? asc : desc;
+    // const sortDirection = order === "asc" ? asc : desc;
 
     switch (sort) {
       case "name":
@@ -186,6 +208,7 @@ export class TaskService {
         break;
       case "distance":
         //
+        // sortColumn = distanceExpression;
         break;
       default:
         sortColumn = tasks.createdAt;
@@ -193,26 +216,31 @@ export class TaskService {
 
     // Execute query with all conditions combined
     // const results = await db
-    let queryBuilder = db
+    const query = db
       .select()
       .from(tasks)
       .leftJoin(categories, eq(tasks.categoryId, categories.id))
       .leftJoin(locations, eq(tasks.locationId, locations.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined);
+    let queryBuilder = query.$dynamic();
+
+    // Consider adding an index hint for location-based queries if performance is an issue
+    // e.g., .withIndexHint(tasks, 'idx_location') if such an index exists
+
     // Apply sorting based on selected sort type
     if (sort === "distance" && distanceExpression) {
       queryBuilder = queryBuilder.orderBy(
-        distanceExpression,
-        order === "asc" ? "asc" : "desc"
+        order === "asc" ? asc(distanceExpression) : desc(distanceExpression)
       );
     } else if (sortColumn) {
       queryBuilder = queryBuilder.orderBy(
-        sortColumn,
-        order === "asc" ? "asc" : "desc"
+        order === "asc" ? asc(sortColumn) : desc(sortColumn)
       );
     }
 
-    const results = await queryBuilder.limit(limit).offset((page - 1) * limit);
+    const results = await queryBuilder
+      .limit(limit)
+      .offset((validPage - 1) * validLimit);
 
     // .orderBy(sortDirection(sortColumn))
     // .limit(limit)
