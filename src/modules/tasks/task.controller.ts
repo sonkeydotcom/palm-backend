@@ -3,6 +3,7 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 import { TaskSearchParams, taskService } from "./task.service";
 import { success } from "../../utils/api-response";
 import { AppError } from "../../utils/app-error";
+import { validateTask } from "../../validators/task-validator";
 
 export class TaskController {
   async getAllTasks(req: AuthRequest, res: Response, next: NextFunction) {
@@ -87,6 +88,154 @@ export class TaskController {
         throw new AppError("Task not found", 404);
       }
       success(res, task, "Task retrieved successfully", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTaskBySlug(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { slug } = req.params;
+      const task = await taskService.findBySlug(slug);
+      if (!task) {
+        throw new AppError("Task not found", 404);
+      }
+      success(res, task, "Task retrieved successfully", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getFeaturedTasks(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { limit } = req.query;
+      const tasks = await taskService.getFeaturedTasks(
+        limit ? Number.parseInt(limit as string) : undefined
+      );
+
+      if (tasks.length === 0) {
+        success(res, [], "No featured tasks found", 204);
+      }
+
+      success(res, tasks, "Featured tasks retrieved successfully", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPoplularTaks(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { limit } = req.query;
+      const tasks = await taskService.getPopularTasks(
+        limit ? Number.parseInt(limit as string) : undefined
+      );
+
+      if (tasks.length === 0) {
+        success(res, [], "No popular tasks found", 204);
+      }
+
+      success(res, tasks, "Popular tasks retrieved successfully", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getRelatedTasks(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = Number.parseInt(req.params.locationId);
+      const { limit } = req.query;
+      const tasks = await taskService.getRelatedTasks(
+        id,
+        limit ? Number.parseInt(limit as string) : undefined
+      );
+
+      if (tasks.length === 0) {
+        success(res, [], "No related tasks found", 204);
+      }
+
+      success(res, tasks, "Related tasks retrieved successfully", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createTask(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      // Validate request
+      const { error, value } = validateTask(req.body);
+      if (error) {
+        throw new AppError(error.details[0].message, 400);
+      }
+
+      // Create the task
+      const task = await taskService.create(value);
+      success(res, task, "Task created successfully", 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateTask(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = Number.parseInt(req.params.id);
+
+      // Validate request
+
+      const { error, value } = validateTask(req.body, true);
+
+      if (error) {
+        throw new AppError(error.details[0].message, 400);
+      }
+
+      // Update task
+
+      const task = await taskService.update(id, value);
+
+      if (!task) {
+        throw new AppError("Task not found", 404);
+      }
+
+      success(res, task, "Task updated successfully", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+  async deleteTask(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = Number.parseInt(req.params.id);
+
+      const result = await taskService.delete(id);
+
+      if (!result) {
+        throw new AppError("Task not found", 404);
+      }
+
+      success(res, { deleted: true }, "Task deleted successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async toggleTaskActive(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = Number.parseInt(req.params.id);
+      const { isActive } = req.body;
+
+      if (isActive === undefined || typeof isActive !== "boolean") {
+        throw new AppError("isActive boolean is required", 400);
+      }
+
+      const task = await taskService.toggleActive(id, isActive);
+
+      if (!task) {
+        throw new AppError("Task not found", 404);
+      }
+
+      success(
+        res,
+        task,
+        `Task ${isActive ? "activated" : "deactivated"} successfully`
+      );
     } catch (error) {
       next(error);
     }

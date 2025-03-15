@@ -9,10 +9,17 @@ import {
   jsonb,
   doublePrecision,
 } from "drizzle-orm/pg-core";
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import {
+  relations,
+  type InferInsertModel,
+  type InferSelectModel,
+} from "drizzle-orm";
 import { users } from "../users/user.schema";
 import { locations } from "../locations/location.schema";
 import { categories } from "../categories/category.schema";
+import { tasks } from "../tasks/task.schema";
+import { bookings } from "../bookings/booking.schema";
+import { reviews } from "../reviews/review.schema";
 
 export const taskers = pgTable("taskers", {
   id: serial("id").primaryKey(),
@@ -87,12 +94,14 @@ export type NewTaskerSkill = InferInsertModel<typeof taskerSkills>;
 export type TaskerPortfolioItem = InferSelectModel<typeof taskerPortfolio>;
 export type NewTaskerPortfolioItem = InferInsertModel<typeof taskerPortfolio>;
 
-// export const providerRelations = relations(providers, ({ many, one }) => ({
-//   services: many(services),
-//   bookings: many(bookings),
-//   reviews: many(reviews),
-//   user: one(users, {
-//     fields: [providers.userId],
-//     references: [users.id],
-//   }),
-// }));
+export const taskerRelations = relations(taskers, ({ many, one }) => ({
+  tasks: many(tasks),
+  bookings: many(bookings),
+  reviews: many(reviews),
+  skills: many(taskerSkills),
+  potfolio: one(taskerPortfolio),
+  user: one(users, {
+    fields: [taskers.userId],
+    references: [users.id],
+  }),
+}));

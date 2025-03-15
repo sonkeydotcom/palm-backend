@@ -39,7 +39,7 @@ export const authenticate = (
   }
 };
 
-export const authprize = (roles: string[]) => {
+export const authorize = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AppError("Authentication required", 401));
