@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { NODE_ENV } from "../config/env";
+import { AppError } from "../utils/app-error";
 
 const logError = (message: string, stack?: string) => {
   if (NODE_ENV !== "production") {
@@ -29,8 +30,11 @@ export const errorHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction
 ) => {
+  if (err instanceof AppError) {
+    res.status(err.statusCode);
+  }
   const statusCode = res.statusCode >= 400 ? res.statusCode : 500;
-  const responseMessage =
+  const statusMessage =
     statusCode === 404
       ? "Resource not found"
       : statusCode === 401
@@ -50,9 +54,12 @@ export const errorHandler = (
 
   res.status(statusCode).json({
     success: false,
-    message: responseMessage,
-    error: process.env.NODE_ENV !== "production" ? errorMessage : undefined,
-    // stack: process.env.NODE_ENV !== "production" ? errorStack : undefined,
+    error: {
+      code: statusCode,
+      status: statusMessage,
+      message: errorMessage,
+      // ...(process.env.NODE_ENV !== "production" && { stack: errorStack }),
+    },
     method: req.method,
     timestamp: new Date().toISOString(),
   });

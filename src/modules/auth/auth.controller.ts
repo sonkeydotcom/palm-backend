@@ -5,6 +5,7 @@ import {
   validateLogin,
   validateRegister,
 } from "../../validators/auth.validator";
+import { success } from "../../utils/api-response";
 
 export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
@@ -20,7 +21,7 @@ export class AuthController {
       const result = await authService.login(value.email, value.password);
 
       // Return response
-      res.json(result);
+      success(res, result, "User logged in successfully");
       return;
     } catch (error) {
       next(error);
@@ -35,12 +36,11 @@ export class AuthController {
         res.status(400).json({ error: error.details[0].message });
         return;
       }
-
       // Register user
       const result = await authService.register(value);
 
       // Return response
-      res.status(201).json(result);
+      success(res, result, "User logged in successfully");
       return;
     } catch (error) {
       next(error);

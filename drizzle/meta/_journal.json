@@ -8,6 +8,13 @@
       "when": 1741880200172,
       "tag": "0000_zippy_miek",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1742002291755,
+      "tag": "0001_fresh_firestar",
+      "breakpoints": true
     }
   ]
 }
