@@ -23,7 +23,7 @@ import {
 import db from "../../config/database";
 import { categories } from "../categories/category.schema";
 import { AppError } from "../../utils/app-error";
-import { User, users } from "../users/user.schema";
+import { User } from "../users/user.schema";
 
 export interface TaskerSearchParams {
   query?: string;
@@ -65,10 +65,7 @@ export class TaskerService {
       limit = 20,
     } = options;
 
-    // Step 1: Build the base query for taskers with all direct filters
-    let taskerQuery = db.select().from(taskers).$dynamic();
-
-    // Apply filters directly on taskers table
+    const offset = (page - 1) * limit;
     const taskerConditions = [];
 
     if (!includeInactive) {
@@ -110,24 +107,33 @@ export class TaskerService {
       );
     }
 
-    if (taskerConditions.length > 0) {
-      taskerQuery = taskerQuery.where(and(...taskerConditions));
-    }
+    // Sorting logic
+    const sortFieldMap = {
+      rating: taskers.averageRating,
+      completions: taskers.totalTasksCompleted,
+      responseTime: taskers.responseTime,
+      rate: taskerSkills.hourlyRate, // Add this line to include "rate"
+    } as const;
 
-    // Step 2: Handle category and rate filters (requires join with taskerSkills)
-    let taskerIds: number[] = [];
+    const orderByClause =
+      order === "asc" ? asc(sortFieldMap[sort]) : desc(sortFieldMap[sort]);
 
+    // Build the base query
+    let taskerIdsQuery = db
+      .select({ id: taskers.id })
+      .from(taskers)
+      .$dynamic()
+      .limit(limit)
+      .offset(offset)
+      .orderBy(orderByClause);
+
+    // Apply skill and rate filters
     if (
       options.categoryId ||
       options.categorySlug ||
       options.minRate !== undefined ||
       options.maxRate !== undefined
     ) {
-      let skillsQuery = db
-        .select({ taskerId: taskerSkills.taskerId })
-        .from(taskerSkills)
-        .where(eq(taskerSkills.isActive, true));
-
       const skillConditions = [];
 
       if (options.categoryId) {
@@ -135,109 +141,51 @@ export class TaskerService {
       }
 
       if (options.categorySlug) {
-        // For category slug, we need to find the category ID first
-        const categoryQuery = await db
-          .select({ id: categories.id })
-          .from(categories)
-          .where(eq(categories.slug, options.categorySlug))
-          .limit(1);
-
-        if (categoryQuery.length > 0) {
-          skillConditions.push(
-            eq(taskerSkills.categoryId, categoryQuery[0].id)
-          );
-        } else {
-          return []; // No category found with this slug
-        }
+        skillConditions.push(eq(categories.slug, options.categorySlug));
       }
 
-      if (options.minRate !== undefined && options.maxRate !== undefined) {
+      if (options.minRate !== undefined || options.maxRate !== undefined) {
+        const minRate = options.minRate ?? 0;
+        const maxRate = options.maxRate ?? Number.MAX_SAFE_INTEGER;
         skillConditions.push(
-          between(taskerSkills.hourlyRate, options.minRate, options.maxRate)
-        );
-      } else if (options.minRate !== undefined) {
-        skillConditions.push(
-          sql`${taskerSkills.hourlyRate} >= ${options.minRate}`
-        );
-      } else if (options.maxRate !== undefined) {
-        skillConditions.push(
-          sql`${taskerSkills.hourlyRate} <= ${options.maxRate}`
+          between(taskerSkills.hourlyRate, minRate, maxRate)
         );
       }
 
-      if (skillConditions.length > 0) {
-        skillsQuery = skillsQuery.where(and(...skillConditions));
-      }
-
-      // Get tasker IDs that have matching skills
-      const taskerIdsWithSkills = await skillsQuery;
-      taskerIds = taskerIdsWithSkills.map((t) => t.taskerId);
-
-      if (taskerIds.length === 0) {
-        return []; // No taskers match the skill criteria
-      }
-
-      // Add condition to filter by these tasker IDs
-      taskerQuery = taskerQuery.where(inArray(taskers.id, taskerIds));
+      taskerIdsQuery = taskerIdsQuery
+        .innerJoin(taskerSkills, eq(taskerSkills.taskerId, taskers.id))
+        .innerJoin(categories, eq(taskerSkills.categoryId, categories.id))
+        .where(and(...skillConditions));
     }
 
-    // Step 3: Apply sorting based on the selected field
-    switch (sort) {
-      case "rating":
-        taskerQuery =
-          order === "asc"
-            ? taskerQuery.orderBy(asc(taskers.averageRating))
-            : taskerQuery.orderBy(desc(taskers.averageRating));
-        break;
-      case "completions":
-        taskerQuery =
-          order === "asc"
-            ? taskerQuery.orderBy(asc(taskers.totalTasksCompleted))
-            : taskerQuery.orderBy(desc(taskers.totalTasksCompleted));
-        break;
-      case "responseTime":
-        taskerQuery =
-          order === "asc"
-            ? taskerQuery.orderBy(asc(taskers.responseTime))
-            : taskerQuery.orderBy(desc(taskers.responseTime));
-        break;
-      case "createdAt":
-        taskerQuery =
-          order === "asc"
-            ? taskerQuery.orderBy(asc(taskers.createdAt))
-            : taskerQuery.orderBy(desc(taskers.createdAt));
-        break;
-      // For "rate" sorting, we can't directly sort here as it's in the skills table
-      // We'll handle it after fetching the results
+    // Add other conditions to the tasker query
+    if (taskerConditions.length > 0) {
+      taskerIdsQuery = taskerIdsQuery.where(and(...taskerConditions));
     }
 
-    // Step 4: Apply pagination
-    const offset = (page - 1) * limit;
-    taskerQuery = taskerQuery.limit(limit).offset(offset);
+    // Execute the query
+    const taskerIdsResult = await taskerIdsQuery;
+    const filteredTaskerIds = taskerIdsResult.map((t) => t.id);
 
-    // Step 5: Execute the tasker query
-    const taskersResult = await taskerQuery;
-
-    if (taskersResult.length === 0) {
-      return []; // No taskers match the criteria
+    if (filteredTaskerIds.length === 0) {
+      return [];
     }
 
-    // Get the filtered tasker IDs for related data
-    const filteredTaskerIds = taskersResult.map((tasker) => tasker.id);
+    // Fetch the full tasker data
+    const taskersResult = await db
+      .select()
+      .from(taskers)
+      .where(inArray(taskers.id, filteredTaskerIds));
 
-    // Create a map for the taskers
+    // Create a map for quick lookup
     const taskersById = new Map<number, TaskerWithRelations>();
     taskersResult.forEach((tasker) => {
       taskersById.set(tasker.id, { ...tasker, skills: [], portfolioItems: [] });
     });
 
-    // Step 6: Fetch skills with category information
+    // Fetch skills for these taskers
     const skillsResult = await db
-      .select({
-        taskerSkill: taskerSkills,
-        categoryName: categories.name,
-        categorySlug: categories.slug,
-      })
+      .select()
       .from(taskerSkills)
       .leftJoin(categories, eq(taskerSkills.categoryId, categories.id))
       .where(
@@ -247,71 +195,34 @@ export class TaskerService {
         )
       );
 
-    // Add skills to taskers
     skillsResult.forEach((row) => {
-      const tasker = taskersById.get(row.taskerSkill.taskerId);
-      if (tasker && tasker.skills) {
-        tasker.skills.push({
-          ...row.taskerSkill,
-          categoryName: row.categoryName,
-          categorySlug: row.categorySlug,
+      const tasker = taskersById.get(row.tasker_skills.taskerId);
+      if (tasker) {
+        const skill = row.tasker_skills;
+        const category = row.categories;
+        tasker.skills!.push({
+          ...skill,
+          categoryName: category?.name,
+          categorySlug: category?.slug,
         });
       }
     });
 
-    // Step 7: Fetch portfolio items
+    // Fetch portfolio items for these taskers
     const portfolioItems = await db
       .select()
       .from(taskerPortfolio)
       .where(inArray(taskerPortfolio.taskerId, filteredTaskerIds))
       .orderBy(asc(taskerPortfolio.displayOrder));
 
-    // Add portfolio items to taskers
     portfolioItems.forEach((item) => {
       const tasker = taskersById.get(item.taskerId);
-      if (tasker && tasker.portfolioItems) {
-        tasker.portfolioItems.push(item);
+      if (tasker) {
+        tasker.portfolioItems!.push(item);
       }
     });
 
-    // Step 8: Fetch user data if needed
-    const userIds = taskersResult.map((tasker) => tasker.userId);
-    const usersResult = await db
-      .select()
-      .from(users)
-      .where(inArray(users.id, userIds));
-
-    // Create user map for quick lookup
-    const usersById = new Map<number, User>();
-    usersResult.forEach((user) => {
-      usersById.set(user.id, user);
-    });
-
-    // Add user data to taskers
-    taskersResult.forEach((tasker) => {
-      const taskerWithRelations = taskersById.get(tasker.id);
-      if (taskerWithRelations) {
-        taskerWithRelations.user = usersById.get(tasker.userId);
-      }
-    });
-
-    // Special case: If sorting by rate, we need to post-process the results
-    if (sort === "rate") {
-      const taskersArray = Array.from(taskersById.values());
-
-      // Sort by the lowest or highest hourly rate across all skills
-      return taskersArray.sort((a, b) => {
-        const aRates = a.skills?.map((skill) => skill.hourlyRate) || [];
-        const bRates = b.skills?.map((skill) => skill.hourlyRate) || [];
-
-        const aMinRate = aRates.length > 0 ? Math.min(...aRates) : Infinity;
-        const bMinRate = bRates.length > 0 ? Math.min(...bRates) : Infinity;
-
-        return order === "asc" ? aMinRate - bMinRate : bMinRate - aMinRate;
-      });
-    }
-
-    // Convert map back to array, preserving the original query order
+    // Convert map back to array
     return filteredTaskerIds.map((id) => taskersById.get(id)!);
   }
 
@@ -329,14 +240,27 @@ export class TaskerService {
     const tasker: TaskerWithRelations = result[0];
 
     // Fetch skills
+    // Fetch skills
     const skills = await db
       .select({
-        ...taskerSkills,
-        categoryName: taskCategories.name,
-        categorySlug: taskCategories.slug,
+        id: taskerSkills.id,
+        isActive: taskerSkills.isActive,
+        createdAt: taskerSkills.createdAt,
+        updatedAt: taskerSkills.updatedAt,
+        taskerId: taskerSkills.taskerId,
+        categoryId: taskerSkills.categoryId,
+        hourlyRate: taskerSkills.hourlyRate,
+        quickPitch: taskerSkills.quickPitch,
+        experience: taskerSkills.experience,
+        experienceYears: taskerSkills.experienceYears,
+        hasEquipment: taskerSkills.hasEquipment,
+        equipmentDescription: taskerSkills.equipmentDescription,
+        isQuickAssign: taskerSkills.isQuickAssign,
+        categoryName: categories.name, // Use the correct join table here
+        categorySlug: categories.slug, // Use the correct join table here
       })
       .from(taskerSkills)
-      .leftJoin(categories, eq(taskerSkills.categoryId, categories.id))
+      .leftJoin(categories, eq(taskerSkills.categoryId, categories.id)) // Fixed join table
       .where(
         and(eq(taskerSkills.taskerId, id), eq(taskerSkills.isActive, true))
       );
@@ -345,8 +269,8 @@ export class TaskerService {
       const { categoryName, categorySlug, ...skillData } = skill;
       return {
         ...skillData,
-        categoryName,
-        categorySlug,
+        categoryName: categoryName ?? undefined,
+        categorySlug: categorySlug ?? undefined,
       };
     });
 
@@ -517,7 +441,7 @@ export class TaskerService {
       .from(taskerPortfolio)
       .where(eq(taskerPortfolio.taskerId, taskerId));
 
-    const displayOrder = (maxOrderResult[0]?.maxOrder || 0) + 1;
+    const displayOrder = (Number(maxOrderResult[0]?.maxOrder) || 0) + 1;
 
     const result = await db
       .insert(taskerPortfolio)
