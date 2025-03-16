@@ -67,6 +67,21 @@ export const bookings = pgTable("bookings", {
   //   ),
 });
 
+export const bookingMessages = pgTable("booking_messages", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id")
+    .references(() => bookings.id)
+    .notNull(),
+  senderId: integer("sender_id")
+    .references(() => users.id)
+    .notNull(),
+  message: text("message").notNull(),
+  attachments: jsonb("attachments"), // Array of attachment URLs
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at").default(sql`now()`),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const bookingsRelations = relations(bookings, ({ one }) => ({
   user: one(users, {
     fields: [bookings.userId],
@@ -84,3 +99,4 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
 
 export type Booking = InferSelectModel<typeof bookings>;
 export type NewBooking = InferSelectModel<typeof bookings>;
+export type BookingMessage = InferSelectModel<typeof bookingMessages>;
