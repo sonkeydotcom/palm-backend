@@ -30,6 +30,7 @@ export const taskers = pgTable("taskers", {
   bio: text("bio"),
   profilePhoto: text("profile_photo"),
   coverPhoto: text("cover_photo"),
+  gallery: jsonb("gallery"), // Array of photo URLs
   locationId: integer("location_id").references(() => locations.id),
   workRadius: integer("work_radius"), // in miles/km
   availability: jsonb("availability"), // Weekly availability schedule
