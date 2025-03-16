@@ -36,12 +36,12 @@ export const subservices = pgTable("subservices", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-export const categoryRelations = relations(services, ({ many }) => ({
+export const serviceRelations = relations(services, ({ many }) => ({
   subservices: many(subservices),
   tasks: many(tasks),
 }));
 
 export type Service = InferSelectModel<typeof services>;
-export type Subcategory = InferSelectModel<typeof subservices>;
+export type Subcservice = InferSelectModel<typeof subservices>;
 export type NewService = InferInsertModel<typeof services>;
-export type NewSubcategory = InferInsertModel<typeof subservices>;
+export type NewSubservice = InferInsertModel<typeof subservices>;
