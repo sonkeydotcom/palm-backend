@@ -7,7 +7,7 @@ import { AppError } from "../../utils/app-error";
 import { serviceService } from "./service.service";
 
 export class ServiceController {
-  async getAllCategories(req: Request, res: Response, next: NextFunction) {
+  async getAllServices(req: Request, res: Response, next: NextFunction) {
     try {
       const { includeInactive, parentId, sort, order } = req.query;
 
@@ -59,7 +59,7 @@ export class ServiceController {
     }
   }
 
-  async searchCategories(req: Request, res: Response, next: NextFunction) {
+  async searchServices(req: Request, res: Response, next: NextFunction) {
     try {
       const { query } = req.query;
 
