@@ -32,6 +32,7 @@ export const subservices = pgTable("subservices", {
   serviceId: serial("service_id").references(() => services.id),
   name: varchar("name", { length: 100 }).unique().notNull(),
   description: varchar("description", { length: 255 }),
+  keywords: text("keywords"),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
