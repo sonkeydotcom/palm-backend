@@ -29,7 +29,7 @@ export const services = pgTable("services", {
 
 export const subservices = pgTable("subservices", {
   id: serial("id").primaryKey(),
-  categoryId: serial("category_id").references(() => services.id),
+  serviceId: serial("service_id").references(() => services.id),
   name: varchar("name", { length: 100 }).unique().notNull(),
   description: varchar("description", { length: 255 }),
   createdAt: timestamp("created_at").default(sql`now()`),
