@@ -94,9 +94,9 @@ export class ServiceService {
     const slug = data.slug || slugify(data.name, { lower: true, strict: true });
 
     // Check if slug already exists
-    const existingCategory = await this.findBySlug(slug);
-    if (existingCategory) {
-      throw new AppError("Category with this slug already exists", 400);
+    const existingService = await this.findBySlug(slug);
+    if (existingService) {
+      throw new AppError("Service with this slug already exists", 400);
     }
 
     const result = await db
@@ -116,9 +116,9 @@ export class ServiceService {
   ): Promise<Service | undefined> {
     // If slug is being updated, check if it already exists
     if (data.slug) {
-      const existingCategory = await this.findBySlug(data.slug);
-      if (existingCategory && existingCategory.id !== id) {
-        throw new AppError("Category with this slug already exists", 400);
+      const existingService = await this.findBySlug(data.slug);
+      if (existingService && existingService.id !== id) {
+        throw new AppError("Service with this slug already exists", 400);
       }
     }
 
@@ -127,8 +127,8 @@ export class ServiceService {
       data.slug = slugify(data.name, { lower: true, strict: true });
 
       // Check if generated slug already exists
-      const existingCategory = await this.findBySlug(data.slug);
-      if (existingCategory && existingCategory.id !== id) {
+      const existingService = await this.findBySlug(data.slug);
+      if (existingService && existingService.id !== id) {
         // Append ID to make slug unique
         data.slug = `${data.slug}-${id}`;
       }
@@ -147,7 +147,7 @@ export class ServiceService {
   }
 
   async delete(id: number): Promise<boolean> {
-    // In a real application, you might want to check if there are tasks using this category
+    // In a real application, you might want to check if there are tasks using this service
     // and either prevent deletion or update those tasks
 
     const result = await db

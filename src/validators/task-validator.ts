@@ -1,8 +1,8 @@
 import Joi from "joi";
-import { Category } from "../modules/services/service.schema";
+import { Service } from "../modules/services/service.schema";
 import { Task } from "../modules/tasks/task.schema";
 
-export const validateTaskCategory = (data: Category, isUpdate = false) => {
+export const validateService = (data: Service, isUpdate = false) => {
   const schema = Joi.object({
     name: isUpdate
       ? Joi.string().min(2).max(100)
