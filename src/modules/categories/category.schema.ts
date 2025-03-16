@@ -20,7 +20,7 @@ export const categories = pgTable("categories", {
   description: text("description"),
   icon: text("icon"),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
-  // parentId: serial("parent_id").references(() => categories.id),
+  parentId: serial("parent_id"),
   displayOrder: serial("display_order"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
