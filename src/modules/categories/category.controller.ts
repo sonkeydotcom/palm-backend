@@ -2,6 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import { categoryService } from "./category.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { validateTaskCategory } from "../../validators/task-validator";
+import { success } from "../../utils/api-response";
+import { AppError } from "../../utils/app-error";
 
 export class CategoryController {
   async getAllCategories(req: Request, res: Response, next: NextFunction) {
@@ -76,13 +78,13 @@ export class CategoryController {
       // Validate request
       const { error, value } = validateTaskCategory(req.body);
       if (error) {
-        return res.status(400).json({ error: error.details[0].message });
+        throw new AppError(error.details[0].message, 400);
       }
 
       // Create category
       const category = await categoryService.create(value);
 
-      return res.status(201).json(category);
+      success(res, category, "Category created successfully", 201);
     } catch (error) {
       next(error);
     }
