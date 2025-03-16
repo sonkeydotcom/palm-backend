@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
@@ -11,8 +12,9 @@ import {
 import { users } from "../users/user.schema";
 
 import { InferSelectModel, relations, sql } from "drizzle-orm";
-import { taskers } from "../tasker/tasker.schema";
+import { taskers, taskerSkills } from "../tasker/tasker.schema";
 import { tasks } from "../tasks/task.schema";
+import { locations } from "../locations/location.schema";
 
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
@@ -25,6 +27,12 @@ export const bookings = pgTable("bookings", {
   taskId: integer("task_id")
     .references(() => tasks.id)
     .notNull(),
+  taskerSkillId: integer("tasker_skill_id")
+    .references(() => taskerSkills.id)
+    .notNull(),
+  locationId: integer("location_id").references(() => locations.id),
+  taskDetails: text("task_details"),
+  taskResponses: jsonb("task_responses"), // Responses to task questions
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, confirmed, cancelled, completed
@@ -41,6 +49,7 @@ export const bookings = pgTable("bookings", {
     .notNull(),
   cancelledAt: timestamp("cancelled_at"),
   cancellationReason: text("cancellation_reason"),
+  cancellationFee: integer("cancellation_fee"), // in cents
   isRescheduled: boolean("is_rescheduled").default(false),
   //   previousBookingId: integer("previous_booking_id").references(
   //     () => bookings.id
