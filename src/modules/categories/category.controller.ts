@@ -67,7 +67,7 @@ export class CategoryController {
       }
 
       const categories = await categoryService.search(query);
-      return res.json(categories);
+      success(res, categories, "categories retrieved successfully");
     } catch (error) {
       next(error);
     }
