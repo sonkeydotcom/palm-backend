@@ -1,10 +1,10 @@
 import { eq, like, and, desc, asc, sql } from "drizzle-orm";
 import slugify from "slugify";
-import { categories, Category, NewCategory } from "./service.schema";
 import db from "../../config/database";
 import { AppError } from "../../utils/app-error";
+import { NewService, Service, services } from "./service.schema";
 
-export class CategoryService {
+export class ServiceService {
   async findAll(
     options: {
       includeInactive?: boolean;
@@ -12,7 +12,7 @@ export class CategoryService {
       sort?: string;
       order?: "asc" | "desc";
     } = {}
-  ): Promise<Category[]> {
+  ): Promise<Service[]> {
     const {
       includeInactive = false,
       parentId,
@@ -20,19 +20,19 @@ export class CategoryService {
       order = "asc",
     } = options;
 
-    let query = db.select().from(categories).$dynamic();
+    let query = db.select().from(services).$dynamic();
 
     // Filter by active status
     if (!includeInactive) {
-      query = query.where(eq(categories.isActive, true));
+      query = query.where(eq(services.isActive, true));
     }
 
     // Filter by parent ID
     if (parentId !== undefined) {
       if (parentId === null) {
-        query = query.where(sql`${categories.parentId} IS NULL`);
+        query = query.where(sql`${services.parentId} IS NULL`);
       } else {
-        query = query.where(eq(categories.parentId, parentId));
+        query = query.where(eq(services.parentId, parentId));
       }
     }
 
@@ -40,56 +40,56 @@ export class CategoryService {
     if (sort === "name") {
       query =
         order === "asc"
-          ? query.orderBy(asc(categories.name))
-          : query.orderBy(desc(categories.name));
+          ? query.orderBy(asc(services.name))
+          : query.orderBy(desc(services.name));
     } else if (sort === "createdAt") {
       query =
         order === "asc"
-          ? query.orderBy(asc(categories.createdAt))
-          : query.orderBy(desc(categories.createdAt));
+          ? query.orderBy(asc(services.createdAt))
+          : query.orderBy(desc(services.createdAt));
     } else {
       // Default sort by display order
       query =
         order === "asc"
-          ? query.orderBy(asc(categories.displayOrder))
-          : query.orderBy(desc(categories.displayOrder));
+          ? query.orderBy(asc(services.displayOrder))
+          : query.orderBy(desc(services.displayOrder));
     }
 
     return query;
   }
 
-  async findById(id: number): Promise<Category | undefined> {
+  async findById(id: number): Promise<Service | undefined> {
     const result = await db
       .select()
-      .from(categories)
-      .where(eq(categories.id, id))
+      .from(services)
+      .where(eq(services.id, id))
       .limit(1);
 
     return result[0];
   }
 
-  async findBySlug(slug: string): Promise<Category | undefined> {
+  async findBySlug(slug: string): Promise<Service | undefined> {
     const result = await db
       .select()
-      .from(categories)
-      .where(eq(categories.slug, slug))
+      .from(services)
+      .where(eq(services.slug, slug))
       .limit(1);
 
     return result[0];
   }
 
-  async search(query: string): Promise<Category[]> {
+  async search(query: string): Promise<Service[]> {
     return db
       .select()
-      .from(categories)
+      .from(services)
       .where(
-        and(eq(categories.isActive, true), like(categories.name, `%${query}%`))
+        and(eq(services.isActive, true), like(services.name, `%${query}%`))
       );
   }
 
   async create(
-    data: Omit<NewCategory, "slug"> & { slug?: string }
-  ): Promise<Category> {
+    data: Omit<NewService, "slug"> & { slug?: string }
+  ): Promise<Service> {
     // Generate slug if not provided
     const slug = data.slug || slugify(data.name, { lower: true, strict: true });
 
@@ -100,7 +100,7 @@ export class CategoryService {
     }
 
     const result = await db
-      .insert(categories)
+      .insert(services)
       .values({
         ...data,
         slug,
@@ -112,8 +112,8 @@ export class CategoryService {
 
   async update(
     id: number,
-    data: Partial<Omit<Category, "id" | "createdAt">>
-  ): Promise<Category | undefined> {
+    data: Partial<Omit<Service, "id" | "createdAt">>
+  ): Promise<Service | undefined> {
     // If slug is being updated, check if it already exists
     if (data.slug) {
       const existingCategory = await this.findBySlug(data.slug);
@@ -135,12 +135,12 @@ export class CategoryService {
     }
 
     const result = await db
-      .update(categories)
+      .update(services)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(categories.id, id))
+      .where(eq(services.id, id))
       .returning();
 
     return result[0];
@@ -151,8 +151,8 @@ export class CategoryService {
     // and either prevent deletion or update those tasks
 
     const result = await db
-      .delete(categories)
-      .where(eq(categories.id, id))
+      .delete(services)
+      .where(eq(services.id, id))
       .returning();
 
     return result.length > 0;
@@ -161,18 +161,18 @@ export class CategoryService {
   async toggleActive(
     id: number,
     isActive: boolean
-  ): Promise<Category | undefined> {
+  ): Promise<Service | undefined> {
     const result = await db
-      .update(categories)
+      .update(services)
       .set({
         isActive,
         updatedAt: new Date(),
       })
-      .where(eq(categories.id, id))
+      .where(eq(services.id, id))
       .returning();
 
     return result[0];
   }
 }
 
-export const categoryService = new CategoryService();
+export const serviceService = new ServiceService();
