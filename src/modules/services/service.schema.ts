@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { tasks } from "../tasks/task.schema";
 
-export const categories = pgTable("categories", {
+export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
@@ -27,21 +27,21 @@ export const categories = pgTable("categories", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const subcategories = pgTable("subcategories", {
+export const subservices = pgTable("subservices", {
   id: serial("id").primaryKey(),
-  categoryId: serial("category_id").references(() => categories.id),
+  categoryId: serial("category_id").references(() => services.id),
   name: varchar("name", { length: 100 }).unique().notNull(),
   description: varchar("description", { length: 255 }),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-export const categoryRelations = relations(categories, ({ many }) => ({
-  subcategories: many(subcategories),
+export const categoryRelations = relations(services, ({ many }) => ({
+  subservices: many(subservices),
   tasks: many(tasks),
 }));
 
-export type Category = InferSelectModel<typeof categories>;
-export type Subcategory = InferSelectModel<typeof subcategories>;
-export type NewCategory = InferInsertModel<typeof categories>;
-export type NewSubcategory = InferInsertModel<typeof subcategories>;
+export type Service = InferSelectModel<typeof services>;
+export type Subcategory = InferSelectModel<typeof subservices>;
+export type NewService = InferInsertModel<typeof services>;
+export type NewSubcategory = InferInsertModel<typeof subservices>;
