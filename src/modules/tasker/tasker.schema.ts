@@ -47,6 +47,8 @@ export const taskers = pgTable("taskers", {
   identityVerified: boolean("identity_verified").default(false),
   phoneVerified: boolean("phone_verified").default(false),
   emailVerified: boolean("email_verified").default(false),
+  bvnVerified: boolean("bvn_verified").default(false), // Added for BVN verification
+  ninVerified: boolean("nin_verified").default(false), // Added for NIN verification
   isElite: boolean("is_elite").default(false), // Elite tasker status
   isActive: boolean("is_active").default(true).notNull(),
   lastSeen: timestamp("last_seen"),
