@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { taskers } from "../tasker/tasker.schema";
-import { categories } from "../services/service.schema";
+import { services } from "../services/service.schema";
 import { locations } from "../locations/location.schema";
 
 export const tasks = pgTable("tasks", {
@@ -22,7 +22,7 @@ export const tasks = pgTable("tasks", {
   taskerId: integer("tasker_id")
     .references(() => taskers.id)
     .notNull(),
-  categoryId: integer("category_id").references(() => categories.id),
+  serviceId: integer("service_id").references(() => services.id),
   locationId: integer("location_id").references(() => locations.id),
   baseHourlyRate: integer("base_hourly_rate"), // in cents
   estimatedDuration: integer("estimated_duration"), // in minutes
@@ -73,9 +73,9 @@ export const taskFaqs = pgTable("task_faqs", {
 //     fields: [services.providerId],
 //     references: [providers.id],
 //   }),
-//   category: one(categories, {
-//     fields: [services.categoryId],
-//     references: [categories.id],
+//   service: one(services, {
+//     fields: [services.serviceId],
+//     references: [services.id],
 //   }),
 //   bookings: many(bookings),
 //   reviews: many(reviews),
