@@ -21,7 +21,7 @@ import {
   tasks,
 } from "./task.schema";
 import db from "../../config/database";
-import { categories } from "../categories/category.schema";
+import { categories } from "../services/service.schema";
 import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
 import { locations } from "../locations/location.schema";

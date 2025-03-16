@@ -16,7 +16,7 @@ import {
 } from "drizzle-orm";
 import { users } from "../users/user.schema";
 import { locations } from "../locations/location.schema";
-import { categories } from "../categories/category.schema";
+import { categories } from "../services/service.schema";
 import { tasks } from "../tasks/task.schema";
 import { bookings } from "../bookings/booking.schema";
 import { reviews } from "../reviews/review.schema";

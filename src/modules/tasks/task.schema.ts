@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { taskers } from "../tasker/tasker.schema";
-import { categories } from "../categories/category.schema";
+import { categories } from "../services/service.schema";
 import { locations } from "../locations/location.schema";
 
 export const tasks = pgTable("tasks", {

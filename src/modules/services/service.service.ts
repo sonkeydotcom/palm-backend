@@ -1,6 +1,6 @@
 import { eq, like, and, desc, asc, sql } from "drizzle-orm";
 import slugify from "slugify";
-import { categories, Category, NewCategory } from "./category.schema";
+import { categories, Category, NewCategory } from "./service.schema";
 import db from "../../config/database";
 import { AppError } from "../../utils/app-error";
 

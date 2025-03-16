@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { Category } from "../modules/categories/category.schema";
+import { Category } from "../modules/services/service.schema";
 import { Task } from "../modules/tasks/task.schema";
 
 export const validateTaskCategory = (data: Category, isUpdate = false) => {
