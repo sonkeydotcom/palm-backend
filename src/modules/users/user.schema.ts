@@ -6,6 +6,7 @@ import {
 } from "drizzle-orm";
 import {
   boolean,
+  pgEnum,
   pgTable,
   serial,
   timestamp,
@@ -15,12 +16,14 @@ import { bookings } from "../bookings/booking.schema";
 import { reviews } from "../reviews/review.schema";
 import { taskers } from "../tasker/tasker.schema";
 
+export const rolesEnum = pgEnum("role", ["user", "tasker", "admin"]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
-  role: varchar("role", { length: 20 }).default("user").notNull(),
+  role: rolesEnum().default("user").notNull(),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   phone: varchar("phone", { length: 255 }),
