@@ -16,7 +16,7 @@ import {
 } from "drizzle-orm";
 import { users } from "../users/user.schema";
 import { locations } from "../locations/location.schema";
-import { categories } from "../services/service.schema";
+import { services } from "../services/service.schema";
 import { tasks } from "../tasks/task.schema";
 import { bookings } from "../bookings/booking.schema";
 import { reviews } from "../reviews/review.schema";
@@ -58,12 +58,12 @@ export const taskerSkills = pgTable("tasker_skills", {
   taskerId: integer("tasker_id")
     .references(() => taskers.id)
     .notNull(),
-  categoryId: integer("category_id")
-    .references(() => categories.id)
+  serviceId: integer("service_id")
+    .references(() => services.id)
     .notNull(),
   hourlyRate: integer("hourly_rate").notNull(), // in cents
   quickPitch: text("quick_pitch"), // Short description of skill
-  experience: text("experience"), // Experience in this category
+  experience: text("experience"), // Experience in this service
   experienceYears: integer("experience_years"), // Years of experience
   hasEquipment: boolean("has_equipment").default(false),
   equipmentDescription: text("equipment_description"),
@@ -78,7 +78,7 @@ export const taskerPortfolio = pgTable("tasker_portfolio", {
   taskerId: integer("tasker_id")
     .references(() => taskers.id)
     .notNull(),
-  categoryId: integer("category_id").references(() => categories.id),
+  serviceId: integer("service_id").references(() => services.id),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   imageUrl: text("image_url").notNull(),

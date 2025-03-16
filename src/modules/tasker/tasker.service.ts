@@ -21,14 +21,14 @@ import {
   taskerSkills,
 } from "./tasker.schema";
 import db from "../../config/database";
-import { categories } from "../services/service.schema";
+import { services } from "../services/service.schema";
 import { AppError } from "../../utils/app-error";
 import { User } from "../users/user.schema";
 
 export interface TaskerSearchParams {
   query?: string;
-  categoryId?: number;
-  categorySlug?: string;
+  serviceId?: number;
+  serviceSlug?: string;
   locationId?: number;
   minRate?: number;
   maxRate?: number;
@@ -45,8 +45,8 @@ export interface TaskerSearchParams {
 
 export interface TaskerWithRelations extends Tasker {
   skills?: (TaskerSkill & {
-    categoryName?: string;
-    categorySlug?: string;
+    serviceName?: string;
+    serviceSlug?: string;
   })[];
   portfolioItems?: TaskerPortfolioItem[];
   user?: User;
@@ -129,19 +129,19 @@ export class TaskerService {
 
     // Apply skill and rate filters
     if (
-      options.categoryId ||
-      options.categorySlug ||
+      options.serviceId ||
+      options.serviceSlug ||
       options.minRate !== undefined ||
       options.maxRate !== undefined
     ) {
       const skillConditions = [];
 
-      if (options.categoryId) {
-        skillConditions.push(eq(taskerSkills.categoryId, options.categoryId));
+      if (options.serviceId) {
+        skillConditions.push(eq(taskerSkills.serviceId, options.serviceId));
       }
 
-      if (options.categorySlug) {
-        skillConditions.push(eq(categories.slug, options.categorySlug));
+      if (options.serviceSlug) {
+        skillConditions.push(eq(services.slug, options.serviceSlug));
       }
 
       if (options.minRate !== undefined || options.maxRate !== undefined) {
@@ -154,7 +154,7 @@ export class TaskerService {
 
       taskerIdsQuery = taskerIdsQuery
         .innerJoin(taskerSkills, eq(taskerSkills.taskerId, taskers.id))
-        .innerJoin(categories, eq(taskerSkills.categoryId, categories.id))
+        .innerJoin(services, eq(taskerSkills.serviceId, services.id))
         .where(and(...skillConditions));
     }
 
@@ -187,7 +187,7 @@ export class TaskerService {
     const skillsResult = await db
       .select()
       .from(taskerSkills)
-      .leftJoin(categories, eq(taskerSkills.categoryId, categories.id))
+      .leftJoin(services, eq(taskerSkills.serviceId, services.id))
       .where(
         and(
           inArray(taskerSkills.taskerId, filteredTaskerIds),
@@ -199,11 +199,11 @@ export class TaskerService {
       const tasker = taskersById.get(row.tasker_skills.taskerId);
       if (tasker) {
         const skill = row.tasker_skills;
-        const category = row.categories;
+        const service = row.services;
         tasker.skills!.push({
           ...skill,
-          categoryName: category?.name,
-          categorySlug: category?.slug,
+          serviceName: service?.name,
+          serviceSlug: service?.slug,
         });
       }
     });
@@ -248,7 +248,7 @@ export class TaskerService {
         createdAt: taskerSkills.createdAt,
         updatedAt: taskerSkills.updatedAt,
         taskerId: taskerSkills.taskerId,
-        categoryId: taskerSkills.categoryId,
+        serviceId: taskerSkills.serviceId,
         hourlyRate: taskerSkills.hourlyRate,
         quickPitch: taskerSkills.quickPitch,
         experience: taskerSkills.experience,
@@ -256,21 +256,21 @@ export class TaskerService {
         hasEquipment: taskerSkills.hasEquipment,
         equipmentDescription: taskerSkills.equipmentDescription,
         isQuickAssign: taskerSkills.isQuickAssign,
-        categoryName: categories.name, // Use the correct join table here
-        categorySlug: categories.slug, // Use the correct join table here
+        serviceName: services.name, // Use the correct join table here
+        serviceSlug: services.slug, // Use the correct join table here
       })
       .from(taskerSkills)
-      .leftJoin(categories, eq(taskerSkills.categoryId, categories.id)) // Fixed join table
+      .leftJoin(services, eq(taskerSkills.serviceId, services.id)) // Fixed join table
       .where(
         and(eq(taskerSkills.taskerId, id), eq(taskerSkills.isActive, true))
       );
 
     tasker.skills = skills.map((skill) => {
-      const { categoryName, categorySlug, ...skillData } = skill;
+      const { serviceName, serviceSlug, ...skillData } = skill;
       return {
         ...skillData,
-        categoryName: categoryName ?? undefined,
-        categorySlug: categorySlug ?? undefined,
+        serviceName: serviceName ?? undefined,
+        serviceSlug: serviceSlug ?? undefined,
       };
     });
 
@@ -348,7 +348,7 @@ export class TaskerService {
       .where(
         and(
           eq(taskerSkills.taskerId, taskerId),
-          eq(taskerSkills.categoryId, skillData.categoryId)
+          eq(taskerSkills.serviceId, skillData.serviceId)
         )
       )
       .limit(1);
@@ -395,7 +395,7 @@ export class TaskerService {
     taskerId: number,
     skillId: number,
     data: Partial<
-      Omit<TaskerSkill, "id" | "taskerId" | "categoryId" | "createdAt">
+      Omit<TaskerSkill, "id" | "taskerId" | "serviceId" | "createdAt">
     >
   ): Promise<TaskerSkill | undefined> {
     const result = await db
@@ -546,11 +546,11 @@ export class TaskerService {
   }
 
   async getTaskersByCategory(
-    categoryId: number,
+    serviceId: number,
     limit = 10
   ): Promise<TaskerWithRelations[]> {
     return this.findAll({
-      categoryId,
+      serviceId,
       sort: "rating",
       order: "desc",
       limit,
