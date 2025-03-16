@@ -32,6 +32,7 @@ export const tasks = pgTable("tasks", {
     .notNull(),
   serviceId: integer("service_id").references(() => services.id),
   locationId: integer("location_id").references(() => locations.id),
+  status: pgEnum("status", statusEnum), // pending, accepted, rejected, completed
   baseHourlyRate: integer("base_hourly_rate"), // in cents
   estimatedDuration: integer("estimated_duration"), // in minutes
   image: text("image"),
