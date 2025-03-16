@@ -8,11 +8,19 @@ import {
   boolean,
   jsonb,
   doublePrecision,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { taskers } from "../tasker/tasker.schema";
 import { services } from "../services/service.schema";
 import { locations } from "../locations/location.schema";
+
+export const statusEnum = pgEnum("status", [
+  "pending",
+  "accepted",
+  "rejected",
+  "completed",
+]);
 
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
