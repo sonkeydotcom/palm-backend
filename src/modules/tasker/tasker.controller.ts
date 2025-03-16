@@ -14,8 +14,8 @@ export class TaskerController {
     try {
       const {
         query,
-        categoryId,
-        categorySlug,
+        serviceId,
+        serviceSlug,
         locationId,
         minRate,
         maxRate,
@@ -33,8 +33,8 @@ export class TaskerController {
       // Parse and validate search parameters
       const searchParams: TaskerSearchParams = {
         query: query as string,
-        categoryId: categoryId ? Number(categoryId) : undefined,
-        categorySlug: categorySlug as string,
+        serviceId: serviceId ? Number(serviceId) : undefined,
+        serviceSlug: serviceSlug as string,
         locationId: locationId ? Number(locationId) : undefined,
         // city: city as string,
         // state: state as string,
@@ -135,17 +135,17 @@ export class TaskerController {
     }
   }
 
-  async getTaskersByCategory(req: Request, res: Response, next: NextFunction) {
+  async getTaskersByService(req: Request, res: Response, next: NextFunction) {
     try {
-      const categoryId = Number(req.params.categoryId);
+      const serviceId = Number(req.params.serviceId);
       const { limit } = req.query;
 
-      const taskers = await taskerService.getTaskersByCategory(
-        categoryId,
+      const taskers = await taskerService.getTaskersByService(
+        serviceId,
         limit ? Number(limit) : undefined
       );
 
-      success(res, taskers, "Taskers by category retrieved successfully");
+      success(res, taskers, "Taskers by service retrieved successfully");
     } catch (error) {
       next(error);
     }

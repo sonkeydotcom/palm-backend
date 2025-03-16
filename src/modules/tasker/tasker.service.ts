@@ -545,7 +545,7 @@ export class TaskerService {
     });
   }
 
-  async getTaskersByCategory(
+  async getTaskersByService(
     serviceId: number,
     limit = 10
   ): Promise<TaskerWithRelations[]> {
