@@ -21,15 +21,15 @@ import {
   tasks,
 } from "./task.schema";
 import db from "../../config/database";
-import { categories } from "../services/service.schema";
+import { services } from "../services/service.schema";
 import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
 import { locations } from "../locations/location.schema";
 
 export interface TaskSearchParams {
   query?: string;
-  categoryId?: number;
-  categorySlug?: string;
+  serviceId?: number;
+  serviceSlug?: string;
   minRate?: number;
   maxRate?: number;
   tags?: string[];
@@ -51,7 +51,7 @@ export interface TaskSearchParams {
 }
 
 export interface TaskWithRelations extends Task {
-  category?: {
+  service?: {
     id: number;
     name: string;
     slug: string;
@@ -104,12 +104,12 @@ export class TaskService {
       );
     }
 
-    if (options.categoryId) {
-      conditions.push(eq(tasks.categoryId, options.categoryId));
+    if (options.serviceId) {
+      conditions.push(eq(tasks.serviceId, options.serviceId));
     }
 
-    if (options.categorySlug) {
-      conditions.push(eq(categories.slug, options.categorySlug));
+    if (options.serviceSlug) {
+      conditions.push(eq(services.slug, options.serviceSlug));
     }
 
     if (options.minRate !== undefined && options.maxRate !== undefined) {
@@ -219,7 +219,7 @@ export class TaskService {
     const query = db
       .select()
       .from(tasks)
-      .leftJoin(categories, eq(tasks.categoryId, categories.id))
+      .leftJoin(services, eq(tasks.serviceId, services.id))
       .leftJoin(locations, eq(tasks.locationId, locations.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined);
     let queryBuilder = query.$dynamic();
@@ -246,22 +246,22 @@ export class TaskService {
     // .limit(limit)
     // .offset((page - 1) * limit);
 
-    // Transform results to include category info
+    // Transform results to include service info
     const tasksWithRelations: TaskWithRelations[] = [];
 
     for (const row of results) {
       const task = row.tasks;
-      const category = row.categories
+      const service = row.services
         ? {
-            id: row.categories.id,
-            name: row.categories.name,
-            slug: row.categories.slug,
+            id: row.services.id,
+            name: row.services.name,
+            slug: row.services.slug,
           }
         : undefined;
 
       tasksWithRelations.push({
         ...task,
-        category,
+        service,
       });
     }
 
@@ -316,7 +316,7 @@ export class TaskService {
     const result = await db
       .select()
       .from(tasks)
-      .leftJoin(categories, eq(tasks.categoryId, categories.id))
+      .leftJoin(services, eq(tasks.serviceId, services.id))
       .where(eq(tasks.id, id))
       .limit(1);
 
@@ -326,17 +326,17 @@ export class TaskService {
 
     const row = result[0];
     const task = row.tasks;
-    const category = row.categories
+    const service = row.services
       ? {
-          id: row.categories.id,
-          name: row.categories.name,
-          slug: row.categories.slug,
+          id: row.services.id,
+          name: row.services.name,
+          slug: row.services.slug,
         }
       : undefined;
 
     const taskWithRelations: TaskWithRelations = {
       ...task,
-      category,
+      service,
     };
 
     // Fetch questions
@@ -364,7 +364,7 @@ export class TaskService {
     const result = await db
       .select()
       .from(tasks)
-      .leftJoin(categories, eq(tasks.categoryId, categories.id))
+      .leftJoin(services, eq(tasks.serviceId, services.id))
       .where(eq(tasks.slug, slug))
       .limit(1);
 
@@ -374,17 +374,17 @@ export class TaskService {
 
     const row = result[0];
     const task = row.tasks;
-    const category = row.categories
+    const service = row.services
       ? {
-          id: row.categories.id,
-          name: row.categories.name,
-          slug: row.categories.slug,
+          id: row.services.id,
+          name: row.services.name,
+          slug: row.services.slug,
         }
       : undefined;
 
     const taskWithRelations: TaskWithRelations = {
       ...task,
-      category,
+      service,
     };
 
     // Fetch questions
@@ -786,12 +786,12 @@ export class TaskService {
   ): Promise<TaskWithRelations[]> {
     const task = await this.findById(taskId);
 
-    if (!task || !task.categoryId) {
+    if (!task || !task.serviceId) {
       return [];
     }
 
     return this.findAll({
-      categoryId: task.categoryId,
+      serviceId: task.serviceId,
       limit,
       sort: "rating",
       order: "desc",
