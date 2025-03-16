@@ -10,8 +10,8 @@ export class TaskController {
     try {
       const {
         query,
-        categoryId,
-        categorySlug,
+        serviceId,
+        serviceSlug,
         minRate,
         maxRate,
         tags,
@@ -33,8 +33,8 @@ export class TaskController {
       } = req.query;
       const searchParams: TaskSearchParams = {
         query: query as string,
-        categoryId: categoryId ? parseInt(categoryId as string) : undefined,
-        categorySlug: categorySlug as string,
+        serviceId: serviceId ? parseInt(serviceId as string) : undefined,
+        serviceSlug: serviceSlug as string,
         minRate: minRate ? parseInt(minRate as string) : undefined,
         maxRate: maxRate ? parseInt(maxRate as string) : undefined,
         tags: tags

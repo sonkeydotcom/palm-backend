@@ -35,7 +35,7 @@ export const validateTasker = (data: NewTasker, isUpdate = false) => {
 
 export const validateTaskerSkill = (data: NewTaskerSkill, isUpdate = false) => {
   const schema = Joi.object({
-    categoryId: isUpdate
+    serviceId: isUpdate
       ? Joi.number().integer()
       : Joi.number().integer().required(),
     hourlyRate: isUpdate
@@ -58,7 +58,7 @@ export const validateTaskerPortfolioItem = (
   isUpdate = false
 ) => {
   const schema = Joi.object({
-    categoryId: Joi.number().integer(),
+    serviceId: Joi.number().integer(),
     title: isUpdate ? Joi.string().max(255) : Joi.string().max(255).required(),
     description: Joi.string(),
     imageUrl: isUpdate ? Joi.string() : Joi.string().required(),

@@ -25,7 +25,7 @@ export const validateTask = (data: Task, isUpdate = false) => {
       : Joi.string().min(2).max(255).required(),
     description: Joi.string(),
     shortDescription: Joi.string().max(500),
-    categoryId: isUpdate
+    serviceId: isUpdate
       ? Joi.number().integer()
       : Joi.number().integer().required(),
     baseHourlyRate: Joi.number().integer().min(0),
