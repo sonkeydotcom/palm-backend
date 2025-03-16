@@ -7,13 +7,13 @@ import {
   timestamp,
   boolean,
   jsonb,
-  doublePrecision,
   pgEnum,
 } from "drizzle-orm/pg-core";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { taskers } from "../tasker/tasker.schema";
 import { services } from "../services/service.schema";
 import { locations } from "../locations/location.schema";
+import { users } from "../users/user.schema";
 
 export const statusEnum = pgEnum("status", [
   "pending",
@@ -30,25 +30,16 @@ export const tasks = pgTable("tasks", {
   taskerId: integer("tasker_id")
     .references(() => taskers.id)
     .notNull(),
+  userId: integer("user_id").references(() => users.id),
   serviceId: integer("service_id").references(() => services.id),
   locationId: integer("location_id").references(() => locations.id),
   status: statusEnum().default("pending"), // pending, accepted, rejected, completed
-  baseHourlyRate: integer("base_hourly_rate"), // in cents
-  estimatedDuration: integer("estimated_duration"), // in minutes
-  image: text("image"),
-  gallery: jsonb("gallery"), // Array of image URLs
-  tags: jsonb("tags"), // Array of tags
   requiredEquipment: jsonb("required_equipment"), // Equipment needed for this task
   requiredSkills: jsonb("required_skills"), // Skills needed for this task
-  isPopular: boolean("is_popular").default(false),
-  isFeatured: boolean("is_featured").default(false),
-  averageRating: doublePrecision("average_rating"),
-  totalCompletions: integer("total_completions").default(0),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   metadata: jsonb("metadata"), // Additional task data
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
 });
 
 export const taskQuestions = pgTable("task_questions", {
