@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { tasks } from "../tasks/task.schema";
 import { categories } from "../categories/category.schema";
@@ -22,9 +23,12 @@ export const services = pgTable("services", {
   description: text("description"),
   icon: text("icon"),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
+  metadata: jsonb("metadata"), // Additional service data
   parentId: serial("parent_id"),
   displayOrder: serial("display_order"),
   isActive: boolean("is_active").default(true).notNull(),
+  isPopular: boolean("is_popular").default(false),
+  isFeatured: boolean("is_featured").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
