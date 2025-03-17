@@ -35,7 +35,8 @@ export class ServiceCategoryController {
       const category = await categoryService.findById(id);
 
       if (!category) {
-        return res.status(404).json({ error: "Category not found" });
+        res.status(404).json({ error: "Category not found" });
+        return;
       }
 
       success(res, category, "Category retrieved successfully", 200, {
@@ -52,7 +53,8 @@ export class ServiceCategoryController {
       const category = await categoryService.findBySlug(slug);
 
       if (!category) {
-        return res.status(404).json({ error: "Category not found" });
+        res.status(404).json({ error: "Category not found" });
+        return;
       }
 
       success(res, category, "Category retrieved successfully", 200, {
@@ -68,7 +70,8 @@ export class ServiceCategoryController {
       const { query } = req.query;
 
       if (!query || typeof query !== "string") {
-        return res.status(400).json({ error: "Search query is required" });
+        res.status(400).json({ error: "Search query is required" });
+        return;
       }
 
       const categories = await categoryService.search(query);
@@ -86,7 +89,8 @@ export class ServiceCategoryController {
       // Validate request
       const { error, value } = validateServiceCategory(req.body);
       if (error) {
-        return res.status(400).json({ error: error.details[0].message });
+        res.status(400).json({ error: error.details[0].message });
+        return;
       }
 
       // Create category
@@ -105,14 +109,16 @@ export class ServiceCategoryController {
       // Validate request
       const { error, value } = validateServiceCategory(req.body, true);
       if (error) {
-        return res.status(400).json({ error: error.details[0].message });
+        res.status(400).json({ error: error.details[0].message });
+        return;
       }
 
       // Update category
       const category = await categoryService.update(id, value);
 
       if (!category) {
-        return res.status(404).json({ error: "Category not found" });
+        res.status(404).json({ error: "Category not found" });
+        return;
       }
 
       success(res, category, "Category updated successfully", 200);
@@ -136,7 +142,8 @@ export class ServiceCategoryController {
       const result = await categoryService.delete(id);
 
       if (!result) {
-        return res.status(404).json({ error: "Category not found" });
+        res.status(404).json({ error: "Category not found" });
+        return;
       }
 
       success(res, {}, "Category deleted successfully", 204);
@@ -155,13 +162,15 @@ export class ServiceCategoryController {
       const { isActive } = req.body;
 
       if (isActive === undefined || typeof isActive !== "boolean") {
-        return res.status(400).json({ error: "isActive boolean is required" });
+        res.status(400).json({ error: "isActive boolean is required" });
+        return;
       }
 
       const category = await categoryService.toggleActive(id, isActive);
 
       if (!category) {
-        return res.status(404).json({ error: "Category not found" });
+        res.status(404).json({ error: "Category not found" });
+        return;
       }
 
       success(
