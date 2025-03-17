@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { services } from "../services/service.schema";
 
-export const categories = pgTable("categories", {
+export const serviceCategories = pgTable("service_categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
@@ -27,9 +27,12 @@ export const categories = pgTable("categories", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-export const serviceRelations = relations(categories, ({ many }) => ({
-  services: many(services),
-}));
+export const serviceCategoryRelations = relations(
+  serviceCategories,
+  ({ many }) => ({
+    services: many(services),
+  })
+);
 
-export type Service = InferSelectModel<typeof categories>;
-export type NewService = InferInsertModel<typeof categories>;
+export type ServiceCategory = InferSelectModel<typeof serviceCategories>;
+export type NewServiceCategory = InferInsertModel<typeof serviceCategories>;
