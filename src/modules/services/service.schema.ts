@@ -12,14 +12,18 @@ import {
   timestamp,
   boolean,
   jsonb,
+  integer,
 } from "drizzle-orm/pg-core";
 import { tasks } from "../tasks/task.schema";
 import { categories } from "../categories/category.schema";
+import { locations } from "../locations/location.schema";
+import { taskers } from "../tasker/tasker.schema";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   categoryId: serial("category_id").references(() => categories.id),
+  locationId: integer("location_id").references(() => locations.id),
   description: text("description"),
   icon: text("icon"),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
@@ -46,6 +50,7 @@ export const subservices = pgTable("subservices", {
 export const serviceRelations = relations(services, ({ many }) => ({
   subservices: many(subservices),
   tasks: many(tasks),
+  taskers: many(taskers),
 }));
 
 export type Service = InferSelectModel<typeof services>;
