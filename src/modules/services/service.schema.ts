@@ -13,10 +13,12 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { tasks } from "../tasks/task.schema";
+import { categories } from "../categories/category.schema";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
+  categoryId: serial("category_id").references(() => categories.id),
   description: text("description"),
   icon: text("icon"),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
