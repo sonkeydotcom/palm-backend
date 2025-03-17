@@ -21,7 +21,9 @@ export class ServiceCategoryController {
         order: (order as "asc" | "desc") || "asc",
       });
 
-      return res.json(categories);
+      success(res, categories, "Categories retrieved successfully", 200, {
+        totalCount: categories.length,
+      });
     } catch (error) {
       next(error);
     }
@@ -36,7 +38,9 @@ export class ServiceCategoryController {
         return res.status(404).json({ error: "Category not found" });
       }
 
-      return res.json(category);
+      success(res, category, "Category retrieved successfully", 200, {
+        totalCount: 1,
+      });
     } catch (error) {
       next(error);
     }
@@ -51,7 +55,9 @@ export class ServiceCategoryController {
         return res.status(404).json({ error: "Category not found" });
       }
 
-      return res.json(category);
+      success(res, category, "Category retrieved successfully", 200, {
+        totalCount: 1,
+      });
     } catch (error) {
       next(error);
     }
