@@ -2,7 +2,7 @@ import express from "express";
 import logger from "./config/logger";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware";
 import cookieParser from "cookie-parser";
-import routes from "./routes/index";
+import routes from "./routes/index.routes";
 
 const app = express();
 
