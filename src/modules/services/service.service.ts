@@ -1,21 +1,20 @@
-import { db } from "../db";
-import {
-  services,
-  serviceCategories,
-  taskers,
-  taskerSkills,
-  users,
-  locations,
-  bookings,
-  reviews,
-  serviceAttributeValues,
-  serviceFaqs,
-} from "../db";
 import { eq, and, inArray, like, desc, asc, sql, not, or } from "drizzle-orm";
-import { calculateDistance } from "../utils/geo-utils";
-import type { Service, ServiceFaq } from "../db/schema";
-import { slugify } from "slugify";
-import { AppError } from "../utils/error";
+import {
+  Service,
+  serviceAttributeValues,
+  ServiceFaq,
+  serviceFaqs,
+  services,
+} from "./service.schema";
+import db from "../../config/database";
+import { serviceCategories } from "../service-categories/service-category.schema";
+import { taskers, taskerSkills } from "../tasker/tasker.schema";
+import { users } from "../users/user.schema";
+import { bookings } from "../bookings/booking.schema";
+import { reviews } from "../reviews/review.schema";
+import { AppError } from "../../utils/app-error";
+import slugify from "slugify";
+import { locations } from "../locations/location.schema";
 
 export interface ServiceSearchParams {
   query?: string;
@@ -80,7 +79,7 @@ export interface ServiceWithTaskers {
   basePrice?: number;
   pricingType?: string;
   image?: string;
-  gallery?: any;
+  gallery?: string;
   averageRating?: number;
   totalReviews?: number;
   slug: string;
@@ -110,7 +109,7 @@ export interface TaskerForService {
   completedTasks: number;
   distance?: number;
   quickPitch?: string;
-  availability?: any;
+  availability?: string;
   location?: {
     city: string;
     state: string;
@@ -456,7 +455,7 @@ export const serviceService = {
       .orderBy(desc(taskers.averageRating));
 
     // Group taskers by service and limit to top N per service
-    const taskersByService = new Map<number, any[]>();
+    const taskersByService = new Map<number, string[]>();
 
     taskerResults.forEach((result) => {
       if (!taskersByService.has(result.serviceId)) {
@@ -544,7 +543,8 @@ export const serviceService = {
           eq(taskerSkills.isActive, true),
           eq(taskers.isActive, true)
         )
-      );
+      )
+      .$dynamic();
 
     // Apply price filters if provided
     if (minPrice !== undefined) {
@@ -756,8 +756,8 @@ export const serviceService = {
           serviceId: skill.serviceId,
           serviceName: skill.serviceName,
           hourlyRate: skill.hourlyRate,
-          experience: skill.experience,
-          experienceYears: skill.experienceYears,
+          // experience: skill.experience,
+          // experienceYears: skill.experienceYears,
         });
       }
     });
@@ -776,7 +776,7 @@ export const serviceService = {
         id: reviews.id,
         taskerId: reviews.taskerId,
         userId: reviews.userId,
-        rating: reviews.overallRating,
+        // rating: reviews.overallRating,
         comment: reviews.comment,
         createdAt: reviews.createdAt,
         userName: users.firstName,
@@ -813,8 +813,8 @@ export const serviceService = {
       conditions.push(
         or(
           like(services.name, `%${search}%`),
-          like(services.description || "", `%${search}%`),
-          like(services.shortDescription || "", `%${search}%`)
+          like(services.description || "", `%${search}%`)
+          // like(services.shortDescription || "", `%${search}%`)
         )
       );
     }
@@ -958,11 +958,11 @@ export const serviceService = {
       image: string;
       gallery: string[];
       tags: string[];
-      customFields: any;
+      customFields: string;
       isPopular: boolean;
       isFeatured: boolean;
       slug: string;
-      metadata: any;
+      metadata: string;
       isActive: boolean;
       attributes: { attributeId: number; value: string }[];
       faqs: (
