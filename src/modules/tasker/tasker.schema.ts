@@ -102,7 +102,7 @@ export const taskerRelations = relations(taskers, ({ many, one }) => ({
   bookings: many(bookings),
   reviews: many(reviews),
   skills: many(taskerSkills),
-  potfolio: one(taskerPortfolio),
+  portfolio: one(taskerPortfolio),
   user: one(users, {
     fields: [taskers.userId],
     references: [users.id],

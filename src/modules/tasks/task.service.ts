@@ -67,7 +67,7 @@ export interface TaskWithRelations extends Task {
     postalCode: string;
     latitude: number;
     longitude: number;
-  };
+  } | null;
 }
 
 export class TaskService {

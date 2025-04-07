@@ -23,7 +23,8 @@ import {
 import db from "../../config/database";
 import { services } from "../services/service.schema";
 import { AppError } from "../../utils/app-error";
-import { User } from "../users/user.schema";
+import { User, users } from "../users/user.schema";
+import { locations } from "../locations/location.schema";
 
 export interface TaskerSearchParams {
   query?: string;
@@ -36,9 +37,12 @@ export interface TaskerSearchParams {
   isElite?: boolean;
   isBackgroundChecked?: boolean;
   isIdentityVerified?: boolean;
-  sort?: "rating" | "completions" | "rate" | "responseTime";
+  sort?: "rating" | "completions" | "rate" | "responseTime" | "distance";
   order?: "asc" | "desc";
   page?: number;
+  radius?: number;
+  latitude?: number;
+  longitude?: number;
   limit?: number;
   includeInactive?: boolean;
 }
@@ -50,10 +54,18 @@ export interface TaskerWithRelations extends Tasker {
   })[];
   portfolioItems?: TaskerPortfolioItem[];
   user?: User;
+  location?: Location | null;
+  distance?: number;
 }
 
 export class TaskerService {
   // Update the findAll method to follow current Drizzle best practices
+
+  /**
+   * Find all taskers based on search parameters
+   * @param options Search parameters
+   * @returns Array of taskers with their relations
+   */
   async findAll(
     options: TaskerSearchParams = {}
   ): Promise<TaskerWithRelations[]> {
@@ -63,9 +75,16 @@ export class TaskerService {
       order = "desc",
       page = 1,
       limit = 20,
+      latitude,
+      longitude,
+      radius,
     } = options;
 
-    const offset = (page - 1) * limit;
+    // Validate pagination parameters
+    const validatedPage = Math.max(1, page);
+    const validatedLimit = Math.min(Math.max(1, limit), 100);
+    const offset = (validatedPage - 1) * validatedLimit;
+
     const taskerConditions = [];
 
     if (!includeInactive) {
@@ -107,36 +126,59 @@ export class TaskerService {
       );
     }
 
-    // Sorting logic
-    const sortFieldMap = {
-      rating: taskers.averageRating,
-      completions: taskers.totalTasksCompleted,
-      responseTime: taskers.responseTime,
-      rate: taskerSkills.hourlyRate, // Add this line to include "rate"
-    } as const;
+    // Location-based querying
+    let distanceExpression;
+    if (
+      latitude !== undefined &&
+      longitude !== undefined &&
+      radius !== undefined
+    ) {
+      // Create a safer distance expression with explicit casting and validation
+      distanceExpression = sql`(
+          ST_Distance(
+            ST_SetSRID(ST_MakePoint(${locations.longitude}, ${locations.latitude}), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography
+          ) / 1000.0
+        )`;
 
-    const orderByClause =
-      order === "asc" ? asc(sortFieldMap[sort]) : desc(sortFieldMap[sort]);
+      // Convert radius to meters if it's in kilometers
+      // const radiusInMeters = radius * 1000;
+      taskerConditions.push(sql`${distanceExpression} <= ${radius}`);
+    }
 
     // Build the base query
     let taskerIdsQuery = db
-      .select({ id: taskers.id })
+      .select({
+        id: taskers.id,
+        ...(distanceExpression ? { distance: distanceExpression } : {}),
+      })
       .from(taskers)
-      .$dynamic()
-      .limit(limit)
-      .offset(offset)
-      .orderBy(orderByClause);
+      .$dynamic();
+    // .limit(limit)
+    // .offset(offset)
+    // .orderBy(orderByClause);
+
+    // Add location join if needed for distance calculation
+
+    if (distanceExpression) {
+      taskerIdsQuery = taskerIdsQuery.innerJoin(
+        locations,
+        eq(taskers.locationId, locations.id)
+      );
+    }
 
     // Apply skill and rate filters
-    if (
-      options.serviceId ||
-      options.serviceSlug ||
+
+    const hasSkillFilters =
+      options.serviceId !== undefined ||
+      options.serviceSlug !== undefined ||
       options.minRate !== undefined ||
-      options.maxRate !== undefined
-    ) {
+      options.maxRate != undefined;
+
+    if (hasSkillFilters) {
       const skillConditions = [];
 
-      if (options.serviceId) {
+      if (options.serviceId !== undefined) {
         skillConditions.push(eq(taskerSkills.serviceId, options.serviceId));
       }
 
@@ -159,28 +201,109 @@ export class TaskerService {
     }
 
     // Add other conditions to the tasker query
+
     if (taskerConditions.length > 0) {
       taskerIdsQuery = taskerIdsQuery.where(and(...taskerConditions));
     }
 
+    // Hnadle sorting based on available fields
+
+    // Sorting logic
+    const sortFieldMap = {
+      rating: taskers.averageRating,
+      completions: taskers.totalTasksCompleted,
+      responseTime: taskers.responseTime,
+      rate: taskerSkills.hourlyRate, // Add this line to include "rate"
+      distance: distanceExpression,
+    } as const satisfies Record<string, unknown>;
+
+    let orderByClause;
+
+    if (sort === "rate" && hasSkillFilters) {
+      orderByClause =
+        order === "asc"
+          ? asc(taskerSkills.hourlyRate)
+          : desc(taskerSkills.hourlyRate);
+    } else if (sortFieldMap[sort]) {
+      orderByClause =
+        order === "asc" ? asc(sortFieldMap[sort]) : desc(sortFieldMap[sort]);
+    }
+
+    // Add sorting, limit, and offset
+    if (orderByClause) {
+      taskerIdsQuery = taskerIdsQuery.orderBy(orderByClause);
+    }
+
+    // Add district to handle possible duplicates from joins
+    taskerIdsQuery = taskerIdsQuery
+      .groupBy(taskers.id)
+      .limit(validatedLimit)
+      .offset(offset);
+
     // Execute the query
     const taskerIdsResult = await taskerIdsQuery;
+
+    if (!taskerIdsResult) {
+      return [];
+    }
+
+    // Extract tasker IDs and distances if available
     const filteredTaskerIds = taskerIdsResult.map((t) => t.id);
+    const distanceMap = new Map();
+
+    if (distanceExpression) {
+      taskerIdsResult.forEach((t) => {
+        if ("distance" in t) {
+          distanceMap.set(t.id, t.distance);
+        }
+      });
+    }
 
     if (filteredTaskerIds.length === 0) {
       return [];
     }
 
     // Fetch the full tasker data
-    const taskersResult = await db
+    // const taskersResult = await db
+    //   .select()
+    //   .from(taskers)
+    //   .leftJoin(users, eq(taskers.userId, users.id))
+    //   .leftJoin(locations, eq(taskers.locationId, locations.id))
+    //   .where(inArray(taskers.id, filteredTaskerIds));
+
+    const taskersResult = (await db
       .select()
       .from(taskers)
-      .where(inArray(taskers.id, filteredTaskerIds));
+      .leftJoin(users, eq(taskers.userId, users.id))
+      .leftJoin(locations, eq(taskers.locationId, locations.id))
+      .execute()) as Array<{
+      taskers: Tasker;
+      users: User | null;
+      locations: Location | null;
+    }>;
 
     // Create a map for quick lookup
     const taskersById = new Map<number, TaskerWithRelations>();
-    taskersResult.forEach((tasker) => {
-      taskersById.set(tasker.id, { ...tasker, skills: [], portfolioItems: [] });
+    taskersResult.forEach((row) => {
+      const {
+        users: userData,
+        locations: locationData,
+        taskers: taskerData,
+      } = row;
+
+      const taskerWithRelations: TaskerWithRelations = {
+        ...taskerData,
+        user: userData ?? undefined,
+        location: locationData ?? undefined,
+        skills: [],
+        portfolioItems: [],
+      };
+
+      if (distanceMap.has(taskerData.id)) {
+        taskerWithRelations.distance = distanceMap.get(taskerData.id);
+      }
+
+      taskersById.set(taskerData.id, taskerWithRelations);
     });
 
     // Fetch skills for these taskers
@@ -195,6 +318,7 @@ export class TaskerService {
         )
       );
 
+    // Add skills to each tasker
     skillsResult.forEach((row) => {
       const tasker = taskersById.get(row.tasker_skills.taskerId);
       if (tasker) {
@@ -215,15 +339,18 @@ export class TaskerService {
       .where(inArray(taskerPortfolio.taskerId, filteredTaskerIds))
       .orderBy(asc(taskerPortfolio.displayOrder));
 
+    // Add portfolio items to each tasker
     portfolioItems.forEach((item) => {
       const tasker = taskersById.get(item.taskerId);
-      if (tasker) {
+      if (tasker && tasker.portfolioItems) {
         tasker.portfolioItems!.push(item);
       }
     });
 
-    // Convert map back to array
-    return filteredTaskerIds.map((id) => taskersById.get(id)!);
+    // Return taskers in the same order as the initial query
+    return filteredTaskerIds
+      .map((id) => taskersById.get(id)!)
+      .filter((tasker): tasker is TaskerWithRelations => !!tasker);
   }
 
   async findById(id: number): Promise<TaskerWithRelations | undefined> {

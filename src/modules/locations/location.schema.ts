@@ -1,19 +1,19 @@
 import {
   boolean,
-  integer,
+  // integer,
   pgTable,
   serial,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
-import { users } from "../users/user.schema";
+// import { users } from "../users/user.schema";
 import { InferInsertModel, InferSelectModel, sql } from "drizzle-orm";
 
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id),
+  // userId: integer("user_id")
+  //   .notNull()
+  //   .references(() => users.id),
   label: varchar("label", { length: 50 }).notNull().default("home"), // e.g home, work, etc.
   address: varchar("address", { length: 255 }),
   city: varchar("city", { length: 100 }),
