@@ -1,14 +1,4 @@
-import {
-  eq,
-  like,
-  and,
-  or,
-  desc,
-  asc,
-  inArray,
-  sql,
-  between,
-} from "drizzle-orm";
+import { eq, like, and, or, desc, asc, inArray, sql } from "drizzle-orm";
 import {
   NewTask,
   NewTaskFaq,
@@ -26,6 +16,23 @@ import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
 import { locations } from "../locations/location.schema";
 
+interface ServiceRelation {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface LocationRelation {
+  id: number;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface TaskSearchParams {
   query?: string;
   serviceId?: number;
@@ -33,16 +40,8 @@ export interface TaskSearchParams {
   minRate?: number;
   maxRate?: number;
   tags?: string[];
-  isFeatured?: boolean;
-  isPopular?: boolean;
   locationId?: number;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
   radius?: number;
-  latitude?: number;
-  longitude?: number;
   sort?: "name" | "rate" | "rating" | "createdAt" | "distance";
   order?: "asc" | "desc";
   page?: number;
@@ -51,49 +50,28 @@ export interface TaskSearchParams {
 }
 
 export interface TaskWithRelations extends Task {
-  service?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
+  service?: ServiceRelation | null;
   questions?: TaskQuestion[];
   faqs?: TaskFaq[];
-  location?: {
-    id: number;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    latitude: number;
-    longitude: number;
-  } | null;
+  location?: LocationRelation | null;
 }
 
 export class TaskService {
-  // Fix the findAll method
   async findAll(options: TaskSearchParams = {}): Promise<TaskWithRelations[]> {
     const {
-      includeInactive = false,
+      // includeInactive = false,
       sort = "createdAt",
       order = "desc",
       page = 1,
       limit = 20,
-      latitude,
-      longitude,
-      radius,
     } = options;
 
-    const validPage = page > 0 ? page : 1;
-    const validLimit = limit > 0 ? limit : 20;
+    const validPage = Math.max(page, 1);
+    const validLimit = Math.max(limit, 1);
 
-    // Build all conditions in a single array
     const conditions = [];
 
-    if (!includeInactive) {
-      conditions.push(eq(tasks.isActive, true));
-    }
-
+    // if (!includeInactive) conditions.push(eq(tasks.isActive, true));
     if (options.query) {
       conditions.push(
         or(
@@ -103,153 +81,48 @@ export class TaskService {
         )
       );
     }
-
-    if (options.serviceId) {
+    // if (options.userId) conditions.push(eq(tasks.userId, options.userId));
+    if (options.serviceId)
       conditions.push(eq(tasks.serviceId, options.serviceId));
-    }
-
-    if (options.serviceSlug) {
+    if (options.serviceSlug)
       conditions.push(eq(services.slug, options.serviceSlug));
-    }
-
-    if (options.minRate !== undefined && options.maxRate !== undefined) {
-      conditions.push(
-        between(tasks.baseHourlyRate, options.minRate, options.maxRate)
-      );
-    } else if (options.minRate !== undefined) {
-      conditions.push(sql`${tasks.baseHourlyRate} >= ${options.minRate}`);
-    } else if (options.maxRate !== undefined) {
-      conditions.push(sql`${tasks.baseHourlyRate} <= ${options.maxRate}`);
-    }
-
-    if (options.tags && options.tags.length > 0) {
-      // Using a more explicit type casting for the array to improve type safety
-      const tagsArray = options.tags.map((tag) => tag.toString());
-      conditions.push(sql`${tasks.tags} ?& array[${tagsArray.join(",")}]`);
-    }
-
-    if (options.isFeatured !== undefined) {
-      conditions.push(eq(tasks.isFeatured, options.isFeatured));
-    }
-
-    if (options.isPopular !== undefined) {
-      conditions.push(eq(tasks.isPopular, options.isPopular));
-    }
-
-    // Add location filters BEFORE executing the query
-    if (options.locationId) {
+    if (options.locationId)
       conditions.push(eq(tasks.locationId, options.locationId));
-    }
 
-    if (options.city) {
-      conditions.push(like(locations.city, `%${options.city}%`));
-    }
-
-    if (options.state) {
-      conditions.push(like(locations.state, `%${options.state}%`));
-    }
-
-    // Location based sorting
-
-    // let distanceExpression;
-    // if (
-    //   options.latitude !== undefined &&
-    //   options.longitude !== undefined &&
-    //   options.radius !== undefined
-    // ) {
-    //   // calculate distance using Haversine formula
-    //   // Provided 6371 is Earths radius in kilometres
-
-    //   // Create SQL expression for the Haversine formula
-    //   // This is equivalent to our utility function but in SQL form
-    //   distanceExpression = sql`(
-    //   6371 * acos(
-    //     cos(radians(${options.latitude})) *
-    //     cos(radians(${locations.latitude})) *
-    //     cos(radians(${locations.longitude}) - radians(${options.longitude})) +
-    //     sin(radians(${options.latitude})) *
-    //     sin(radians(${locations.latitude}))
-    //   )
-    // )`;
-
-    //   // Add condition to filter by radius
-    //   conditions.push(sql`${distanceExpression} <= ${options.radius}`);
-    // }
-
-    let distanceExpression;
-    if (
-      latitude !== undefined &&
-      longitude !== undefined &&
-      radius !== undefined
-    ) {
-      // Use PostGIS for distance calculation instead of Haversine formula
-      distanceExpression = sql`ST_Distance(
-      ST_SetSRID(ST_MakePoint(${locations.longitude}, ${locations.latitude}), 4326),
-      ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)
-    )`;
-
-      // Add condition to filter by radius
-      conditions.push(sql`${distanceExpression} <= ${radius}`);
-    }
-
-    // Determine sort column and direction
     let sortColumn;
-    // const sortDirection = order === "asc" ? asc : desc;
-
     switch (sort) {
       case "name":
         sortColumn = tasks.name;
         break;
-      case "rate":
-        sortColumn = tasks.baseHourlyRate;
-        break;
-      case "rating":
-        sortColumn = tasks.averageRating;
-        break;
-      case "distance":
-        //
-        // sortColumn = distanceExpression;
-        break;
+      // case "rate":
+      //   sortColumn = tasks.baseHourlyRate;
+      //   break;
+      // case "rating":
+      //   sortColumn = tasks.averageRating;
+      //   break;
       default:
         sortColumn = tasks.createdAt;
     }
 
-    // Execute query with all conditions combined
-    // const results = await db
-    const query = db
+    let queryBuilder = db
       .select()
       .from(tasks)
       .leftJoin(services, eq(tasks.serviceId, services.id))
       .leftJoin(locations, eq(tasks.locationId, locations.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
-    let queryBuilder = query.$dynamic();
+      .where(conditions.length ? and(...conditions) : undefined)
+      .$dynamic();
 
-    // Consider adding an index hint for location-based queries if performance is an issue
-    // e.g., .withIndexHint(tasks, 'idx_location') if such an index exists
-
-    // Apply sorting based on selected sort type
-    if (sort === "distance" && distanceExpression) {
-      queryBuilder = queryBuilder.orderBy(
-        order === "asc" ? asc(distanceExpression) : desc(distanceExpression)
-      );
-    } else if (sortColumn) {
+    if (sortColumn) {
       queryBuilder = queryBuilder.orderBy(
         order === "asc" ? asc(sortColumn) : desc(sortColumn)
       );
     }
 
     const results = await queryBuilder
-      .limit(limit)
+      .limit(validLimit)
       .offset((validPage - 1) * validLimit);
 
-    // .orderBy(sortDirection(sortColumn))
-    // .limit(limit)
-    // .offset((page - 1) * limit);
-
-    // Transform results to include service info
-    const tasksWithRelations: TaskWithRelations[] = [];
-
-    for (const row of results) {
+    const tasksWithRelations: TaskWithRelations[] = results.map((row) => {
       const task = row.tasks;
       const service = row.services
         ? {
@@ -259,52 +132,45 @@ export class TaskService {
           }
         : undefined;
 
-      tasksWithRelations.push({
-        ...task,
-        service,
-      });
-    }
+      const location = row.locations
+        ? {
+            id: row.locations.id,
+            address: row.locations.address,
+            city: row.locations.city,
+            state: row.locations.state,
+            country: row.locations.country,
+            postalCode: row.locations.postalCode,
+            latitude: row.locations.latitude,
+            longitude: row.locations.longitude,
+          }
+        : null;
 
-    // Fetch questions and FAQs for each task
+      return { ...task, service, location };
+    });
+
     const taskIds = tasksWithRelations.map((task) => task.id);
+    if (taskIds.length) {
+      const [questions, faqs] = await Promise.all([
+        db
+          .select()
+          .from(taskQuestions)
+          .where(inArray(taskQuestions.taskId, taskIds)),
+        db.select().from(taskFaqs).where(inArray(taskFaqs.taskId, taskIds)),
+      ]);
 
-    if (taskIds.length > 0) {
-      // Fetch questions
-      const questions = await db
-        .select()
-        .from(taskQuestions)
-        .where(inArray(taskQuestions.taskId, taskIds))
-        .orderBy(asc(taskQuestions.displayOrder));
+      const questionsMap: Record<number, TaskQuestion[]> = {};
+      const faqsMap: Record<number, TaskFaq[]> = {};
 
-      // Fetch FAQs
-      const faqs = await db
-        .select()
-        .from(taskFaqs)
-        .where(inArray(taskFaqs.taskId, taskIds))
-        .orderBy(asc(taskFaqs.displayOrder));
-
-      // Group questions and FAQs by task ID
-      const questionsByTaskId: Record<number, TaskQuestion[]> = {};
-      const faqsByTaskId: Record<number, TaskFaq[]> = {};
-
-      questions.forEach((question) => {
-        if (!questionsByTaskId[question.taskId]) {
-          questionsByTaskId[question.taskId] = [];
-        }
-        questionsByTaskId[question.taskId].push(question);
+      questions.forEach((q) => {
+        (questionsMap[q.taskId] ||= []).push(q);
+      });
+      faqs.forEach((f) => {
+        (faqsMap[f.taskId] ||= []).push(f);
       });
 
-      faqs.forEach((faq) => {
-        if (!faqsByTaskId[faq.taskId]) {
-          faqsByTaskId[faq.taskId] = [];
-        }
-        faqsByTaskId[faq.taskId].push(faq);
-      });
-
-      // Add questions and FAQs to tasks
       tasksWithRelations.forEach((task) => {
-        task.questions = questionsByTaskId[task.id] || [];
-        task.faqs = faqsByTaskId[task.id] || [];
+        task.questions = questionsMap[task.id] || [];
+        task.faqs = faqsMap[task.id] || [];
       });
     }
 
@@ -420,7 +286,7 @@ export class TaskService {
     const { questions, faqs, ...data } = taskData;
 
     // Generate slug if not provided
-    const slug = data.slug || slugify(data.name, { lower: true, strict: true });
+    const slug = slugify(taskData.name, { lower: true, strict: true });
 
     // Check if slug already exists
     const existingTask = await db
@@ -430,7 +296,7 @@ export class TaskService {
       .limit(1);
 
     if (existingTask.length > 0) {
-      throw new AppError("Task with this slug already exists", 400);
+      throw new AppError("Task with similar name already exists", 400);
     }
 
     // Start a transaction
@@ -722,6 +588,42 @@ export class TaskService {
     });
   }
 
+  async findByUserId(userId: number): Promise<TaskWithRelations[]> {
+    const results = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.userId, userId))
+      .leftJoin(services, eq(tasks.serviceId, services.id))
+      .leftJoin(locations, eq(tasks.locationId, locations.id))
+      .orderBy(desc(tasks.createdAt));
+
+    return this.enrichTasksWithRelations(results);
+  }
+
+  async findByServiceId(serviceId: number): Promise<TaskWithRelations[]> {
+    const results = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.serviceId, serviceId))
+      .leftJoin(services, eq(tasks.serviceId, services.id))
+      .leftJoin(locations, eq(tasks.locationId, locations.id))
+      .orderBy(desc(tasks.createdAt));
+
+    return this.enrichTasksWithRelations(results);
+  }
+
+  async findByTaskerId(taskerId: number): Promise<TaskWithRelations[]> {
+    const results = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.taskerId, taskerId))
+      .leftJoin(services, eq(tasks.serviceId, services.id))
+      .leftJoin(locations, eq(tasks.locationId, locations.id))
+      .orderBy(desc(tasks.createdAt));
+
+    return this.enrichTasksWithRelations(results);
+  }
+
   async toggleActive(id: number, isActive: boolean): Promise<Task | undefined> {
     const result = await db
       .update(tasks)
@@ -733,6 +635,37 @@ export class TaskService {
       .returning();
 
     return result[0];
+  }
+
+  async updateStatus(
+    taskId: number,
+    status: "pending" | "accepted" | "rejected" | "completed"
+  ): Promise<Task> {
+    const [task] = await db
+      .update(tasks)
+      .set({ status })
+      .where(eq(tasks.id, taskId))
+      .returning();
+
+    if (!task) {
+      throw new AppError("Task not found", 404);
+    }
+
+    return task;
+  }
+
+  async assignTasker(taskId: number, taskerId: number): Promise<Task> {
+    const [task] = await db
+      .update(tasks)
+      .set({ taskerId, status: "accepted" })
+      .where(eq(tasks.id, taskId))
+      .returning();
+
+    if (!task) {
+      throw new AppError("Task not found", 404);
+    }
+
+    return task;
   }
 
   async updateRating(id: number, rating: number): Promise<Task | undefined> {
@@ -761,41 +694,73 @@ export class TaskService {
 
     return result[0];
   }
-
-  async getFeaturedTasks(limit = 6): Promise<TaskWithRelations[]> {
-    return this.findAll({
-      isFeatured: true,
-      limit,
-      sort: "createdAt",
-      order: "desc",
-    });
-  }
-
-  async getPopularTasks(limit = 6): Promise<TaskWithRelations[]> {
-    return this.findAll({
-      isPopular: true,
-      limit,
-      sort: "rating",
-      order: "desc",
-    });
-  }
-
-  async getRelatedTasks(
-    taskId: number,
-    limit = 4
+  /**
+   * Helper method to enrich tasks with relations
+   */
+  private async enrichTasksWithRelations(
+    results: {
+      tasks: Task;
+      services?: ServiceRelation | null;
+      locations?: LocationRelation | null;
+    }[]
   ): Promise<TaskWithRelations[]> {
-    const task = await this.findById(taskId);
+    if (results.length === 0) return [];
 
-    if (!task || !task.serviceId) {
-      return [];
-    }
+    const taskIds = results.map((row) => row.tasks.id);
+    const [questions, faqs] = await Promise.all([
+      db
+        .select()
+        .from(taskQuestions)
+        .where(inArray(taskQuestions.taskId, taskIds))
+        .orderBy(asc(taskQuestions.displayOrder)),
+      db
+        .select()
+        .from(taskFaqs)
+        .where(inArray(taskFaqs.taskId, taskIds))
+        .orderBy(asc(taskFaqs.displayOrder)),
+    ]);
 
-    return this.findAll({
-      serviceId: task.serviceId,
-      limit,
-      sort: "rating",
-      order: "desc",
-    });
+    const questionsByTaskId = questions.reduce(
+      (acc, question) => {
+        if (!acc[question.taskId]) acc[question.taskId] = [];
+        acc[question.taskId].push(question);
+        return acc;
+      },
+      {} as Record<number, TaskQuestion[]>
+    );
+
+    const faqsByTaskId = faqs.reduce(
+      (acc, faq) => {
+        if (!acc[faq.taskId]) acc[faq.taskId] = [];
+        acc[faq.taskId].push(faq);
+        return acc;
+      },
+      {} as Record<number, TaskFaq[]>
+    );
+    return results.map((row) => ({
+      ...row.tasks,
+      service: row.services
+        ? {
+            id: row.services.id,
+            name: row.services.name,
+            slug: row.services.slug,
+          }
+        : null,
+      location: row.locations
+        ? {
+            id: row.locations.id,
+            address: row.locations.address,
+            city: row.locations.city,
+            state: row.locations.state,
+            country: row.locations.country,
+            postalCode: row.locations.postalCode,
+            latitude: row.locations.latitude,
+            longitude: row.locations.longitude,
+          }
+        : null,
+      questions: questionsByTaskId[row.tasks.id] || [],
+      faqs: faqsByTaskId[row.tasks.id] || [],
+    }));
   }
 }
 

@@ -30,14 +30,21 @@ export const tasks = pgTable("tasks", {
   taskerId: integer("tasker_id")
     .references(() => taskers.id)
     .notNull(),
-  userId: integer("user_id").references(() => users.id),
-  serviceId: integer("service_id").references(() => services.id),
-  locationId: integer("location_id").references(() => locations.id),
-  status: statusEnum().default("pending"), // pending, accepted, rejected, completed
-  requiredEquipment: jsonb("required_equipment"), // Equipment needed for this task
-  requiredSkills: jsonb("required_skills"), // Skills needed for this task
+  userId: integer("user_id")
+    .references(() => users.id)
+    .notNull(),
+  serviceId: integer("service_id")
+    .references(() => services.id)
+    .notNull(),
+  locationId: integer("location_id")
+    .references(() => locations.id)
+    .notNull(),
+  status: statusEnum("status").default("pending"), // pending, accepted, rejected, completed
+  requiredEquipment: jsonb("required_equipment").default([]), // Equipment needed for this task
+  requiredSkills: jsonb("required_skills").default([]), // Skills needed for this task
   slug: varchar("slug", { length: 255 }).notNull().unique(),
-  metadata: jsonb("metadata"), // Additional task data
+  metadata: jsonb("metadata").default({}), // Additional task data
+  preferredDatetime: timestamp("preferred_datetime").notNull(), // when the user wants the task done
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
