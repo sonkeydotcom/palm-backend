@@ -13,7 +13,7 @@ import {
 import { users } from "../users/user.schema";
 
 import { InferSelectModel, relations, sql } from "drizzle-orm";
-import { taskers, taskerSkills } from "../tasker/tasker.schema";
+import { taskers, taskerSkills } from "../taskers/tasker.schema";
 import { tasks } from "../tasks/task.schema";
 import { locations } from "../locations/location.schema";
 

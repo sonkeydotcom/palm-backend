@@ -10,7 +10,7 @@ import {
   VerificationType,
 } from "./verification.schema";
 import db from "../../config/database";
-import { taskers } from "../tasker/tasker.schema";
+import { taskers } from "../taskers/tasker.schema";
 import { users } from "../users/user.schema";
 import { AppError } from "../../utils/app-error";
 

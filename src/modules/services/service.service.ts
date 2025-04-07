@@ -8,7 +8,7 @@ import {
 } from "./service.schema";
 import db from "../../config/database";
 import { serviceCategories } from "../service-categories/service-category.schema";
-import { taskers, taskerSkills } from "../tasker/tasker.schema";
+import { taskers, taskerSkills } from "../taskers/tasker.schema";
 import { users } from "../users/user.schema";
 import { bookings } from "../bookings/booking.schema";
 import { reviews } from "../reviews/review.schema";

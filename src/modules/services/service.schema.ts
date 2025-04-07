@@ -17,7 +17,7 @@ import {
 import { tasks } from "../tasks/task.schema";
 import { categories } from "../service-categories/service-category.schema";
 import { locations } from "../locations/location.schema";
-import { taskers } from "../tasker/tasker.schema";
+import { taskers } from "../taskers/tasker.schema";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),

@@ -10,7 +10,7 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { taskers } from "../tasker/tasker.schema";
+import { taskers } from "../taskers/tasker.schema";
 import { services } from "../services/service.schema";
 import { locations } from "../locations/location.schema";
 import { users } from "../users/user.schema";
