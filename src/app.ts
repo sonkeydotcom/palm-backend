@@ -1,6 +1,9 @@
 import express from "express";
-import logger from "./config/logger";
-import { errorHandler, notFoundHandler } from "./middleware/error.middleware";
+import logger from "./common/config/logger";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./common/middleware/error.middleware";
 import cookieParser from "cookie-parser";
 import routes from "./routes/index.routes";
 

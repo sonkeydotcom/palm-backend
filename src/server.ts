@@ -1,6 +1,6 @@
 import app from "./app";
-import { PORT } from "./config/env";
-import { connectDB } from "./config/database";
+import { PORT } from "./common/config/env";
+import { connectDB } from "./common/config/database";
 
 const init = async () => {
   try {

@@ -1,8 +1,8 @@
 import { Router } from "express";
-import auth from "../modules/auth/auth.routes";
-import tasks from "../modules/tasks/tasks.routes";
-import category from "../modules/service-categories/category.routes";
-import taskers from "../modules/taskers/tasker.routes";
+import auth from "../core/auth/auth.routes";
+import tasks from "../core/tasks/tasks.routes";
+import category from "../core/service-categories/category.routes";
+import taskers from "../core/taskers/tasker.routes";
 
 const router = Router();
 
