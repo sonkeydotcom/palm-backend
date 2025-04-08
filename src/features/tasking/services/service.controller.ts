@@ -1,8 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import {
-  serviceService,
-  type ServiceListingParams,
-} from "../services/service-service";
+import { serviceService, type ServiceListingParams } from "./service-service";
 import { successResponse, paginationMeta } from "../utils/api-response";
 import { AppError } from "../utils/app-error";
 import type { AuthRequest } from "../middleware/auth-middleware";

@@ -16,8 +16,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { tasks } from "../tasks/task.schema";
 import { serviceCategories } from "../service-categories/service-category.schema";
-import { locations } from "../locations/location.schema";
-import { taskers } from "../../tasking/taskers/tasker.schema";
+import { locations } from "../../modules/locations/location.schema";
+import { taskers } from "../taskers/tasker.schema";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),

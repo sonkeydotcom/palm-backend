@@ -21,7 +21,7 @@ import {
   taskerSkills,
 } from "./tasker.schema";
 import db from "../../config/database";
-import { services } from "../../modules/services/service.schema";
+import { services } from "../services/service.schema";
 import { AppError } from "../../utils/app-error";
 import { User, users } from "../../modules/users/user.schema";
 import { locations } from "../../modules/locations/location.schema";

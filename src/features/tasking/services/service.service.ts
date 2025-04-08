@@ -8,13 +8,13 @@ import {
 } from "./service.schema";
 import db from "../../config/database";
 import { serviceCategories } from "../service-categories/service-category.schema";
-import { taskers, taskerSkills } from "../../tasking/taskers/tasker.schema";
-import { users } from "../users/user.schema";
+import { taskers, taskerSkills } from "../taskers/tasker.schema";
+import { users } from "../../modules/users/user.schema";
 import { bookings } from "../bookings/booking.schema";
-import { reviews } from "../reviews/review.schema";
+import { reviews } from "../../modules/reviews/review.schema";
 import { AppError } from "../../utils/app-error";
 import slugify from "slugify";
-import { locations } from "../locations/location.schema";
+import { locations } from "../../modules/locations/location.schema";
 
 export interface ServiceSearchParams {
   query?: string;
