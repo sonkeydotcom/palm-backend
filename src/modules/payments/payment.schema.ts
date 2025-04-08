@@ -282,3 +282,6 @@ export const paymentDisputesRelations = relations(
     }),
   })
 );
+
+export type PaymentMethod = typeof paymentMethods;
+export type PaymentMethodRelations = typeof paymentMethodsRelations;
