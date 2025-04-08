@@ -1,6 +1,6 @@
 import { AppError } from "../../utils/app-error";
-import { User } from "../users/user.schema";
-import { userService } from "../users/user.service";
+import { User } from "../../modules/users/user.schema";
+import { userService } from "../../modules/users/user.service";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
