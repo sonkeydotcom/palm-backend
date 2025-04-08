@@ -11,7 +11,12 @@ import {
   text,
   uuid,
 } from "drizzle-orm/pg-core";
-import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  relations,
+  sql,
+} from "drizzle-orm";
 import { users } from "../users/user.schema";
 import { bookings } from "../bookings/booking.schema";
 import { taskers } from "../taskers/tasker.schema";
@@ -64,6 +69,7 @@ export const payments = pgTable("payments", {
     () => paymentMethods.id
   ),
   paymentType: varchar("payment_type", { length: 50 }).notNull(), // card, paypal, bank_transfer, etc.
+  paymentIntentId: varchar("payment_intent_id", { length: 100 }),
   gatewayReference: varchar("gateway_reference", { length: 255 }), // Reference ID from payment gateway
   gatewayResponse: jsonb("gateway_response"), // Full response from payment gateway
   refundStatus: varchar("refund_status", { length: 50 }), // none, partial, full
@@ -75,8 +81,13 @@ export const payments = pgTable("payments", {
   metadata: jsonb("metadata"), // Additional payment data
   description: text("description"),
   receiptUrl: text("receipt_url"), // URL to payment receipt
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  paymentDate: timestamp("payment_date"),
+  createdAt: timestamp("created_at")
+    .default(sql`now()`)
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .default(sql`now()`)
+    .notNull(),
 });
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

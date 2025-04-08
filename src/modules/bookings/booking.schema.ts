@@ -51,6 +51,7 @@ export const bookings = pgTable("bookings", {
   totalPrice: integer("total_price"),
   paymentStatus: varchar("payment_status", { length: 20 }).default("unpaid"), // unpaid, paid, refunded
   paymentMethod: varchar("payment_method", { length: 20 }), // e.g. PayPal, Stripe, etc.
+  paymentIntentId: varchar("payment_intent_id", { length: 100 }),
   //   bookingHistory: jsonb("booking_history"), // JSON array of previous bookings (if any)
   createdAt: timestamp("created_at")
     .default(sql`now()`)
