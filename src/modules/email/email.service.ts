@@ -2,17 +2,12 @@ import { SentMessageInfo } from "nodemailer";
 import { transporter } from "../../config/email";
 import { SMTP_USER } from "../../config/env";
 import { EmailPayload } from "./types";
+import { EmailMessageKey, EmailMessages } from "./messages";
+
 export class EmailService {
-  //   private transporter = transporter();
+  private from = SMTP_USER;
 
-  mailOptions = {
-    from: SMTP_USER,
-    to: "",
-    subject: "",
-    text: "",
-    html: "",
-  };
-
+  // Send raw email manually
   async send({
     to,
     subject,
@@ -20,13 +15,38 @@ export class EmailService {
     htmlBody,
   }: EmailPayload): Promise<SentMessageInfo> {
     const info = await transporter().sendMail({
-      from: this.mailOptions.from,
+      from: this.from,
       to,
       subject,
       text: body,
       html: htmlBody,
     });
-    console.log(info);
+
+    return info; // 🔥 important — avoids TS error
+  }
+
+  // Send predefined message
+  async sendTemplate<T>(
+    to: string,
+    templateKey: EmailMessageKey,
+    data: T
+  ): Promise<SentMessageInfo> {
+    const template = EmailMessages[templateKey] as (data: T) => {
+      subject: string;
+      text: string;
+      html: string;
+    };
+
+    const { subject, text, html } = template(data);
+
+    const info = await transporter().sendMail({
+      from: this.from,
+      to,
+      subject,
+      text,
+      html,
+    });
+
     return info;
   }
 }
