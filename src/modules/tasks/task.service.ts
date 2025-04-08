@@ -11,27 +11,10 @@ import {
   tasks,
 } from "./task.schema";
 import db from "../../config/database";
-import { services } from "../services/service.schema";
+import { Service, services } from "../services/service.schema";
 import slugify from "slugify";
 import { AppError } from "../../utils/app-error";
-import { locations } from "../locations/location.schema";
-
-interface ServiceRelation {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface LocationRelation {
-  id: number;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  latitude: number;
-  longitude: number;
-}
+import { Location, locations } from "../locations/location.schema";
 
 export interface TaskSearchParams {
   query?: string;
@@ -50,10 +33,10 @@ export interface TaskSearchParams {
 }
 
 export interface TaskWithRelations extends Task {
-  service?: ServiceRelation | null;
+  service?: Service | null;
   questions?: TaskQuestion[];
   faqs?: TaskFaq[];
-  location?: LocationRelation | null;
+  location?: Location | null;
 }
 
 export class TaskService {
@@ -124,26 +107,9 @@ export class TaskService {
 
     const tasksWithRelations: TaskWithRelations[] = results.map((row) => {
       const task = row.tasks;
-      const service = row.services
-        ? {
-            id: row.services.id,
-            name: row.services.name,
-            slug: row.services.slug,
-          }
-        : undefined;
+      const service = row.services ? row.services : undefined;
 
-      const location = row.locations
-        ? {
-            id: row.locations.id,
-            address: row.locations.address,
-            city: row.locations.city,
-            state: row.locations.state,
-            country: row.locations.country,
-            postalCode: row.locations.postalCode,
-            latitude: row.locations.latitude,
-            longitude: row.locations.longitude,
-          }
-        : null;
+      const location = row.locations ? row.locations : null;
 
       return { ...task, service, location };
     });
@@ -192,13 +158,7 @@ export class TaskService {
 
     const row = result[0];
     const task = row.tasks;
-    const service = row.services
-      ? {
-          id: row.services.id,
-          name: row.services.name,
-          slug: row.services.slug,
-        }
-      : undefined;
+    const service = row.services ? row.services : undefined;
 
     const taskWithRelations: TaskWithRelations = {
       ...task,
@@ -240,13 +200,7 @@ export class TaskService {
 
     const row = result[0];
     const task = row.tasks;
-    const service = row.services
-      ? {
-          id: row.services.id,
-          name: row.services.name,
-          slug: row.services.slug,
-        }
-      : undefined;
+    const service = row.services ? row.services : undefined;
 
     const taskWithRelations: TaskWithRelations = {
       ...task,
@@ -624,19 +578,6 @@ export class TaskService {
     return this.enrichTasksWithRelations(results);
   }
 
-  async toggleActive(id: number, isActive: boolean): Promise<Task | undefined> {
-    const result = await db
-      .update(tasks)
-      .set({
-        isActive,
-        updatedAt: new Date(),
-      })
-      .where(eq(tasks.id, id))
-      .returning();
-
-    return result[0];
-  }
-
   async updateStatus(
     taskId: number,
     status: "pending" | "accepted" | "rejected" | "completed"
@@ -668,40 +609,40 @@ export class TaskService {
     return task;
   }
 
-  async updateRating(id: number, rating: number): Promise<Task | undefined> {
-    const task = await this.findById(id);
+  // async updateRating(id: number, rating: number): Promise<Task | undefined> {
+  //   const task = await this.findById(id);
 
-    if (!task) {
-      return undefined;
-    }
+  //   if (!task) {
+  //     return undefined;
+  //   }
 
-    const totalCompletions = (task.totalCompletions || 0) + 1;
-    const currentRating = task.averageRating || 0;
+  //   const totalCompletions = (task.totalCompletions || 0) + 1;
+  //   const currentRating = task.averageRating || 0;
 
-    // Calculate new average rating
-    const newRating =
-      (currentRating * (totalCompletions - 1) + rating) / totalCompletions;
+  //   // Calculate new average rating
+  //   const newRating =
+  //     (currentRating * (totalCompletions - 1) + rating) / totalCompletions;
 
-    const result = await db
-      .update(tasks)
-      .set({
-        averageRating: newRating,
-        totalCompletions,
-        updatedAt: new Date(),
-      })
-      .where(eq(tasks.id, id))
-      .returning();
+  //   const result = await db
+  //     .update(tasks)
+  //     .set({
+  //       averageRating: newRating,
+  //       totalCompletions,
+  //       updatedAt: new Date(),
+  //     })
+  //     .where(eq(tasks.id, id))
+  //     .returning();
 
-    return result[0];
-  }
+  //   return result[0];
+  // }
   /**
    * Helper method to enrich tasks with relations
    */
   private async enrichTasksWithRelations(
     results: {
       tasks: Task;
-      services?: ServiceRelation | null;
-      locations?: LocationRelation | null;
+      services?: Service | null;
+      locations?: Location | null;
     }[]
   ): Promise<TaskWithRelations[]> {
     if (results.length === 0) return [];
@@ -739,25 +680,8 @@ export class TaskService {
     );
     return results.map((row) => ({
       ...row.tasks,
-      service: row.services
-        ? {
-            id: row.services.id,
-            name: row.services.name,
-            slug: row.services.slug,
-          }
-        : null,
-      location: row.locations
-        ? {
-            id: row.locations.id,
-            address: row.locations.address,
-            city: row.locations.city,
-            state: row.locations.state,
-            country: row.locations.country,
-            postalCode: row.locations.postalCode,
-            latitude: row.locations.latitude,
-            longitude: row.locations.longitude,
-          }
-        : null,
+      service: row.services ? row.services : null,
+      location: row.locations ? row.locations : null,
       questions: questionsByTaskId[row.tasks.id] || [],
       faqs: faqsByTaskId[row.tasks.id] || [],
     }));
