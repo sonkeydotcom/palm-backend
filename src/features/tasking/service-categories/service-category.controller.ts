@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import { AuthRequest } from "../../middleware/auth.middleware";
+import { AuthRequest } from "../../../middleware/auth.middleware";
 import { categoryService } from "./service-category.service";
-import { validateServiceCategory } from "../services/service-validator";
-import { success } from "../../utils/api-response";
+import { validateServiceCategory } from "../../tasking/services/service-validator";
+import { success } from "../../../utils/api-response";
 
 export class ServiceCategoryController {
   async getAllCategories(req: Request, res: Response, next: NextFunction) {

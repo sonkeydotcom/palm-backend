@@ -14,12 +14,12 @@ import {
   type InferInsertModel,
   type InferSelectModel,
 } from "drizzle-orm";
-import { users } from "../../modules/users/user.schema";
-import { locations } from "../../modules/locations/location.schema";
-import { services } from "../services/service.schema";
+import { users } from "../../../modules/users/user.schema";
+import { locations } from "../../../modules/locations/location.schema";
+import { services } from "../../tasking/services/service.schema";
 import { tasks } from "../tasks/task.schema";
 import { bookings } from "../bookings/booking.schema";
-import { reviews } from "../../modules/reviews/review.schema";
+import { reviews } from "../../../modules/reviews/review.schema";
 
 export const taskers = pgTable("taskers", {
   id: serial("id").primaryKey(),

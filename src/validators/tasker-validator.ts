@@ -3,7 +3,7 @@ import {
   NewTasker,
   NewTaskerPortfolioItem,
   NewTaskerSkill,
-} from "../modules/taskers/tasker.schema";
+} from "../features/tasking/taskers/tasker.schema";
 
 export const validateTasker = (data: NewTasker, isUpdate = false) => {
   const schema = Joi.object({
