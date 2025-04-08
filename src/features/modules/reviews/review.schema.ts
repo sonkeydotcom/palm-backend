@@ -17,7 +17,7 @@ import { users } from "../users/user.schema";
 
 import { bookings } from "../bookings/booking.schema";
 import { tasks } from "../tasks/task.schema";
-import { taskers } from "../taskers/tasker.schema";
+import { taskers } from "../../tasking/taskers/tasker.schema";
 
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),

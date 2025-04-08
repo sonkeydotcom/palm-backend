@@ -19,7 +19,7 @@ import {
 } from "drizzle-orm";
 import { users } from "../users/user.schema";
 import { bookings } from "../bookings/booking.schema";
-import { taskers } from "../taskers/tasker.schema";
+import { taskers } from "../../tasking/taskers/tasker.schema";
 
 // Schema for payment methods stored by users
 export const paymentMethods = pgTable("payment_methods", {

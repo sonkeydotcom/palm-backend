@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { bookings } from "../bookings/booking.schema";
 import { reviews } from "../reviews/review.schema";
-import { taskers } from "../taskers/tasker.schema";
+import { taskers } from "../../tasking/taskers/tasker.schema";
 
 export const rolesEnum = pgEnum("role", ["user", "tasker", "admin"]);
 

@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { users } from "../users/user.schema";
-import { taskers } from "../taskers/tasker.schema";
+import { taskers } from "../../tasking/taskers/tasker.schema";
 
 export const verificationTypes = [
   "bvn",
