@@ -1,10 +1,15 @@
 // modules/emails/messages/index.ts
 
+import { otp } from "./otp";
 import { taskBooked } from "./taskBooked";
+import { taskRequest } from "./taskRequest";
+import { welcome } from "./welcome";
 
 export const EmailMessages = {
   taskBooked,
-  //   taskAccepted,
+  welcome,
+  otp,
+  taskRequest,
   // Add more here...
 };
 
