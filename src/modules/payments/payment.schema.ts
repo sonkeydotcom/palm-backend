@@ -11,7 +11,7 @@ import {
   text,
   uuid,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
 import { users } from "../users/user.schema";
 import { bookings } from "../bookings/booking.schema";
 import { taskers } from "../taskers/tasker.schema";
@@ -283,5 +283,18 @@ export const paymentDisputesRelations = relations(
   })
 );
 
-export type PaymentMethod = typeof paymentMethods;
-export type PaymentMethodRelations = typeof paymentMethodsRelations;
+export type PaymentMethod = InferSelectModel<typeof paymentMethods>;
+export type NewPaymentMethod = InferInsertModel<typeof paymentMethods>;
+export type PaymentDisputeRelations = typeof paymentDisputesRelations;
+export type PaymentRelations = typeof paymentsRelations;
+export type PayoutAccount = InferSelectModel<typeof payoutAccounts>;
+export type NewPayoutAccount = InferInsertModel<typeof payoutAccounts>;
+export type PayoutAccountRelations = typeof payoutAccountsRelations;
+export type Payout = InferSelectModel<typeof payouts>;
+export type NewPayout = InferInsertModel<typeof payouts>;
+export type PayoutRelations = typeof payoutsRelations;
+export type PaymentSetting = typeof paymentSettings;
+export type PaymentSettingRelations = typeof paymentSettingsRelations;
+export type PlatformLedger = typeof platformLedger;
+export type PlatformLedgerRelations = typeof platformLedgerRelations;
+export type PaymentDispute = typeof paymentDisputes;
