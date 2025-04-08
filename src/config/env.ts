@@ -12,6 +12,8 @@ export const {
   SMTP_HOST,
   SMTP_USER,
   SMTP_PASS,
+  SQUADCO_API_KEY,
+  SQUADCO_PRIVATE_KEY,
 
   //   CLIENT_ORIGIN,
   //   REDIS_HOST,
