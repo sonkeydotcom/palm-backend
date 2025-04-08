@@ -5,5 +5,6 @@ export const squadApi = axios.create({
   baseURL: SQUADCO_API_URL,
   headers: {
     Authorization: `Bearer ${SQUADCO_PUBLIC_KEY}`,
+    "Content-Type": "application/json",
   },
 });
