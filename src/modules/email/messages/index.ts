@@ -1,6 +1,6 @@
 // modules/emails/messages/index.ts
 
-import { taskBooked } from "./messages/taskBooked";
+import { taskBooked } from "./taskBooked";
 
 export const EmailMessages = {
   taskBooked,
