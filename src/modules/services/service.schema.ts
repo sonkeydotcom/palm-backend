@@ -15,14 +15,14 @@ import {
   integer,
 } from "drizzle-orm/pg-core";
 import { tasks } from "../tasks/task.schema";
-import { categories } from "../service-categories/service-category.schema";
+import { serviceCategories } from "../service-categories/service-category.schema";
 import { locations } from "../locations/location.schema";
 import { taskers } from "../taskers/tasker.schema";
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
-  categoryId: serial("category_id").references(() => categories.id),
+  categoryId: serial("category_id").references(() => serviceCategories.id),
   locationId: integer("location_id").references(() => locations.id),
   description: text("description"),
   icon: text("icon"),
