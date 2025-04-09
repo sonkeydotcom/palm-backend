@@ -1,8 +1,9 @@
 import type { Response, NextFunction } from "express";
-import { AuthRequest } from "../../middleware/auth.middleware";
-import { AppError } from "../../utils/app-error";
-import { bookingService } from "./booking.service";
-import { success } from "../../utils/api-response";
+import { BookingSearchParams, bookingService } from "./booking.service";
+import { paginationMeta, success } from "../../../common/utils/api-response";
+import { AuthRequest } from "../../../common/middleware/auth.middleware";
+import { AppError } from "../../../common/utils/app-error";
+import { validateBooking } from "../../../common/validators";
 
 export class BookingController {
   /**

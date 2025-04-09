@@ -12,8 +12,8 @@ import {
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { taskers } from "../taskers/tasker.schema";
 import { services } from "../services/service.schema";
-import { locations } from "../locations/location.schema";
-import { users } from "../users/user.schema";
+import { users } from "../../../core/users/user.schema";
+import { locations } from "../../../core/locations/location.schema";
 
 export const statusEnum = pgEnum("status", [
   "pending",

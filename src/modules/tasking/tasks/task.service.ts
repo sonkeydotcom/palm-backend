@@ -10,11 +10,12 @@ import {
   taskQuestions,
   tasks,
 } from "./task.schema";
-import db from "../../config/database";
+
 import { Service, services } from "../services/service.schema";
 import slugify from "slugify";
-import { AppError } from "../../utils/app-error";
-import { Location, locations } from "../locations/location.schema";
+import db from "../../../common/config/database";
+import { locations } from "../../../core/locations/location.schema";
+import { AppError } from "../../../common/utils/app-error";
 
 export interface TaskSearchParams {
   query?: string;

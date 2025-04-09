@@ -20,11 +20,11 @@ import {
   TaskerSkill,
   taskerSkills,
 } from "./tasker.schema";
-import db from "../../config/database";
+import { User, users } from "../../../core/users/user.schema";
+import { locations } from "../../../core/locations/location.schema";
+import db from "../../../common/config/database";
 import { services } from "../services/service.schema";
-import { AppError } from "../../utils/app-error";
-import { User, users } from "../../modules/users/user.schema";
-import { locations } from "../../modules/locations/location.schema";
+import { AppError } from "../../../common/utils/app-error";
 
 export interface TaskerSearchParams {
   query?: string;

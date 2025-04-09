@@ -1,13 +1,14 @@
 import type { Request, Response, NextFunction } from "express";
 import { TaskerSearchParams, taskerService } from "./tasker.service";
-import { success } from "../../utils/api-response"; // paginationMeta
-import { AppError } from "../../utils/app-error";
-import { AuthRequest } from "../../middleware/auth.middleware";
+import { success } from "../../../common/utils/api-response";
+import { AppError } from "../../../common/utils/app-error";
+import { AuthRequest } from "../../../common/middleware/auth.middleware";
 import {
   validateTasker,
   validateTaskerPortfolioItem,
   validateTaskerSkill,
-} from "../../validators/tasker-validator";
+} from "../../../common/validators/tasker-validator";
+// paginationMeta
 
 export class TaskerController {
   async getAllTaskers(req: Request, res: Response, next: NextFunction) {

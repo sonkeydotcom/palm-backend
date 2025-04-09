@@ -1,9 +1,9 @@
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../../middleware/auth.middleware";
 import { TaskSearchParams, taskService } from "./task.service";
-import { success } from "../../utils/api-response";
-import { AppError } from "../../utils/app-error";
-import { validateTask } from "../../validators/task-validator";
+import { AuthRequest } from "../../../common/middleware/auth.middleware";
+import { success } from "../../../common/utils/api-response";
+import { AppError } from "../../../common/utils/app-error";
+import { validateTask } from "../../../common/validators/task-validator";
 
 export class TaskController {
   async getAllTasks(req: AuthRequest, res: Response, next: NextFunction) {
